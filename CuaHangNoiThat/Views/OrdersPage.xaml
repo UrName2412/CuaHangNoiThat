@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:CuaHangNoiThat.Models"
+             x:Class="CuaHangNoiThat.Views.OrdersPage"
+             Title="Đơn hàng"
+             BackgroundColor="#FAFAF9">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="12,12">
+        <Border StrokeShape="RoundRectangle 16" BackgroundColor="#191817" Padding="14">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border WidthRequest="42" HeightRequest="42" StrokeShape="RoundRectangle 21" BackgroundColor="#4A2B15"><Label Text="TD" TextColor="#F7BF35" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Border>
+                <VerticalStackLayout Grid.Column="1" Margin="12,0" VerticalOptions="Center"><Label Text="Nguyễn Thiên Dương" TextColor="White" FontAttributes="Bold" FontSize="13"/><Label Text="Khách hàng thân thiết · Hạng vàng" TextColor="#A3A3A3" FontSize="10"/></VerticalStackLayout>
+                <Button Grid.Column="2" Text="Hẹn Showroom" BackgroundColor="#F7BF35" TextColor="#241A15" FontSize="8" CornerRadius="6" HeightRequest="28" Padding="8,0"/>
+            </Grid>
+        </Border>
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Padding="0,18,0,12">
+            <VerticalStackLayout><Label Text="Theo dõi Tiến Độ Đơn Hàng" FontSize="17" FontAttributes="Bold"/><Label Text="Trạng thái cập nhật trực tiếp từ xưởng mộc &amp; đội xe MOKHA" FontSize="10" TextColor="#737373"/></VerticalStackLayout>
+            <Button Grid.Column="1" Text="Mô phỏng bước kế" Command="{Binding SimulateNextCommand}" BackgroundColor="#FFF8E7" TextColor="#9A5B0B" FontSize="9" CornerRadius="8" HeightRequest="34" Padding="8,0"/>
+        </Grid>
+        <CollectionView Grid.Row="2" ItemsSource="{Binding Orders}" SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:OrderModel">
+                    <Border StrokeShape="RoundRectangle 14" BackgroundColor="White" Stroke="#ECE8E3" Padding="12" Margin="0,0,0,10">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto"><VerticalStackLayout><Label Text="{Binding Code, StringFormat='#{0}'}" FontAttributes="Bold" FontSize="12"/><Label Text="{Binding TotalAmountFormatted}" TextColor="#A34D16" FontSize="11" FontAttributes="Bold"/></VerticalStackLayout><Label Grid.Column="1" Text="{Binding StatusLabel}" TextColor="#16845E" BackgroundColor="#E4F8ED" Padding="8,5" FontSize="9" FontAttributes="Bold"/></Grid>
+                            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="4"><BoxView HeightRequest="4" Color="{Binding Step1Color}"/><BoxView Grid.Column="1" HeightRequest="4" Color="{Binding Step2Color}"/><BoxView Grid.Column="2" HeightRequest="4" Color="{Binding Step3Color}"/><BoxView Grid.Column="3" HeightRequest="4" Color="{Binding Step4Color}"/></Grid>
+                            <Label Text="Tiếp nhận  →  Chế tác xưởng  →  Đang giao  →  Hoàn tất" FontSize="10" TextColor="#737373"/>
+                            <Border IsVisible="{Binding IsShipping}" StrokeShape="RoundRectangle 10" BackgroundColor="#32195D" Padding="10"><VerticalStackLayout Spacing="3"><Label Text="●  ĐỘI XE ĐANG TRÊN ĐƯỜNG GIAO" TextColor="#F7BF35" FontSize="9" FontAttributes="Bold"/><Label Text="Xưởng MOKHA     ·     Nhà khách hàng" TextColor="White" FontSize="10" FontAttributes="Bold"/><Label Text="Cách bạn 2.8 km · Dự kiến đến sau 18 phút" TextColor="#E5D6F5" FontSize="9"/></VerticalStackLayout></Border>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

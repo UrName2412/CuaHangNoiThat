@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:CuaHangNoiThat.Models"
+             x:Class="CuaHangNoiThat.Views.CatalogPage"
+             Title="Danh mục"
+             BackgroundColor="#FAFAF9">
+    <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <VerticalStackLayout Grid.Row="0" Padding="12,12,12,8" Spacing="10">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                <HorizontalStackLayout Spacing="5"><Label Text="⌖" FontSize="17" TextColor="#A34D16"/><Label Text="TP. Hồ Chí Minh" FontSize="11" FontAttributes="Bold" VerticalTextAlignment="Center"/></HorizontalStackLayout>
+                <Label Grid.Column="1" Text="♡" FontSize="22" TextColor="#A34D16"/>
+                <Label Grid.Column="2" Text="🛍" FontSize="18"/>
+            </Grid>
+            <Border BackgroundColor="#F1F1F0" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="11,0"><Grid ColumnDefinitions="Auto,*"><Label Text="⌕" FontSize="18" TextColor="#8A8580" VerticalTextAlignment="Center"/><Entry Grid.Column="1" Placeholder="Tìm ghế sofa, bàn ăn gỗ, đèn gốm..." PlaceholderColor="#AAA5A0" FontSize="11" HeightRequest="40"/></Grid></Border>
+        </VerticalStackLayout>
+        <ScrollView Grid.Row="1" Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout Padding="12,0,12,10" Spacing="8" BindableLayout.ItemsSource="{Binding Categories}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Button Text="{Binding}" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectCategoryCommand}" CommandParameter="{Binding}" Background="#FFFFFF" BorderColor="#E7E1DA" BorderWidth="1" TextColor="#5A514A" CornerRadius="18" Padding="14,4" FontSize="10" HeightRequest="34"/>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </HorizontalStackLayout>
+        </ScrollView>
+        <Grid Grid.Row="2" Padding="12,0" ColumnDefinitions="*,Auto,Auto">
+            <Label Text="{Binding Items.Count, StringFormat='Hiển thị {0} thiết kế'}" TextColor="#8A8580" FontSize="10" VerticalTextAlignment="Center"/>
+            <Button Grid.Column="1" Text="Mọi mức giá⌄" BackgroundColor="White" TextColor="#5A514A" BorderColor="#E7E1DA" BorderWidth="1" CornerRadius="7" HeightRequest="30" FontSize="9" Padding="8,0"/>
+            <Button Grid.Column="2" Text="Nổi bật⌄" BackgroundColor="White" TextColor="#5A514A" BorderColor="#E7E1DA" BorderWidth="1" CornerRadius="7" HeightRequest="30" FontSize="9" Padding="8,0" Margin="5,0,0,0"/>
+        </Grid>
+        <CollectionView Grid.Row="3" ItemsSource="{Binding Items}" SelectionMode="None" Margin="12,8,12,0">
+            <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10"/></CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:FurnitureItem">
+                    <Border StrokeShape="RoundRectangle 12" BackgroundColor="White" Stroke="#ECE8E3" Padding="7">
+                        <VerticalStackLayout Spacing="4">
+                            <Border HeightRequest="108" BackgroundColor="#EAE1D7" StrokeThickness="0" StrokeShape="RoundRectangle 9"><Label Text="▧" FontSize="58" TextColor="#A34D16" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Border>
+                            <Label Text="Tiết kiệm 750.000 đ" BackgroundColor="#FFF8E7" TextColor="#A34D16" FontSize="8" Padding="5,2" HorizontalOptions="Start"/>
+                            <Label Text="{Binding Category}" FontSize="8" TextColor="#8A8580" TextTransform="Uppercase"/>
+                            <Label Text="{Binding Name}" FontSize="12" FontAttributes="Bold" TextColor="#241A15" MaxLines="1"/>
+                            <Label Text="{Binding Description}" FontSize="9" TextColor="#77716B" MaxLines="1"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="{Binding PriceFormatted}" FontSize="11" TextColor="#A34D16" FontAttributes="Bold" VerticalTextAlignment="Center"/>
+                                <Button Grid.Column="1" Text="+ Chọn" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AddToCartCommand}" CommandParameter="{Binding}" BackgroundColor="#241A15" TextColor="White" CornerRadius="7" HeightRequest="30" FontSize="9" Padding="8,0"/>
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

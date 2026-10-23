@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CuaHangNoiThat.Views.CartPage"
+             Title="Giỏ hàng"
+             BackgroundColor="#FAFAF9">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="12,12,12,18" Spacing="12">
+                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                    <HorizontalStackLayout Spacing="5"><Label Text="⌖" FontSize="17" TextColor="#A34D16"/><Label Text="TP. Hồ Chí Minh" FontSize="11" FontAttributes="Bold" VerticalTextAlignment="Center"/></HorizontalStackLayout>
+                    <Label Grid.Column="1" Text="♡" FontSize="22" TextColor="#A34D16"/>
+                    <Label Grid.Column="2" Text="🛍" FontSize="18"/>
+                </Grid>
+                <Border BackgroundColor="#F1F1F0" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="11,0"><Grid ColumnDefinitions="Auto,*"><Label Text="⌕" FontSize="18" TextColor="#8A8580" VerticalTextAlignment="Center"/><Entry Grid.Column="1" Placeholder="Tìm ghế sofa, bàn ăn gỗ, đèn gốm..." PlaceholderColor="#AAA5A0" FontSize="11" HeightRequest="40"/></Grid></Border>
+                <Grid ColumnDefinitions="*,Auto"><Label Text="Giỏ hàng của bạn (1)" FontSize="18" FontAttributes="Bold"/><Label Grid.Column="1" Text="Giao hàng toàn quốc" TextColor="#8A8580" FontSize="9" VerticalTextAlignment="Center"/></Grid>
+                <Border BackgroundColor="#FFF8E7" Stroke="#F2C45A" StrokeShape="RoundRectangle 9" Padding="10"><Label Text="▰  Mua thêm 150.000 đ để được Miễn phí giao &amp; lắp đặt" TextColor="#9A5B0B" FontSize="10" FontAttributes="Bold"/></Border>
+                <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 12" Padding="8">
+                    <Grid ColumnDefinitions="65,*,Auto" ColumnSpacing="9">
+                        <Border BackgroundColor="#EAE1D7" StrokeThickness="0" StrokeShape="RoundRectangle 8"><Label Text="▧" FontSize="34" TextColor="#A34D16" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="{Binding Item.Name}" FontSize="11" FontAttributes="Bold"/><Label Text="{Binding Item.Description}" FontSize="9" TextColor="#77716B"/><Label Text="{Binding Item.PriceFormatted}" FontSize="11" TextColor="#A34D16" FontAttributes="Bold"/></VerticalStackLayout>
+                        <Grid Grid.Column="2" RowDefinitions="*,Auto" VerticalOptions="Center"><Label Text="⌫" TextColor="#B5B0AA" HorizontalTextAlignment="Center"/><Border Grid.Row="1" Stroke="#E7E1DA" StrokeShape="RoundRectangle 7" Padding="7,3"><Label Text="−  1  +" FontSize="10" TextColor="#5A514A"/></Border></Grid>
+                    </Grid>
+                </Border>
+                <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 10" Padding="8"><Grid ColumnDefinitions="Auto,*,Auto"><Label Text="◇" TextColor="#AAA5A0" FontSize="16"/><Entry Grid.Column="1" Placeholder="Nhập mã giảm giá (VD: MOKHA500K)" FontSize="10" HeightRequest="34"/><Button Grid.Column="2" Text="Áp dụng" BackgroundColor="#241A15" TextColor="White" CornerRadius="7" FontSize="9" HeightRequest="30" Padding="10,0"/></Grid></Border>
+                <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 10" Padding="12"><Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="8"><Label Text="Tạm tính hàng hóa:" TextColor="#8A8580" FontSize="10"/><Label Grid.Column="1" Text="{Binding Subtotal}" FontSize="10"/><Label Grid.Row="1" Text="Phí vận chuyển &amp; lắp ráp:" TextColor="#8A8580" FontSize="10"/><Label Grid.Row="1" Grid.Column="1" Text="{Binding ShippingFee}" FontSize="10"/><BoxView Grid.Row="2" Grid.ColumnSpan="2" HeightRequest="1" Color="#EEEAE5"/><Label Grid.Row="2" Text="Tổng thanh toán:" FontSize="11" FontAttributes="Bold"/><Label Grid.Row="2" Grid.Column="1" Text="{Binding Total}" TextColor="#A34D16" FontSize="14" FontAttributes="Bold"/></Grid></Border>
+                <Button Text="TIẾN HÀNH THANH TOÁN   →" Command="{Binding CheckoutCommand}" BackgroundColor="#191817" TextColor="White" CornerRadius="9" HeightRequest="48" FontSize="11" FontAttributes="Bold"/>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

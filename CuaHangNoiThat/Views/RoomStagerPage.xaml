@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CuaHangNoiThat.Views.RoomStagerPage"
+             Title="Phòng AR"
+             BackgroundColor="#FAFAF9">
+    <Grid RowDefinitions="Auto,*,Auto" Padding="12,12">
+        <VerticalStackLayout Spacing="4">
+            <Grid ColumnDefinitions="*,Auto"><Label Text="PHÒNG AR" FontSize="11" CharacterSpacing="2" TextColor="#A34D16" FontAttributes="Bold"/><Label Grid.Column="1" Text="♡" FontSize="22" TextColor="#A34D16"/></Grid>
+            <Label Text="Thử trước khi chọn" FontSize="23" FontAttributes="Bold"/>
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Row="1" Spacing="14" VerticalOptions="Center">
+            <Border StrokeShape="RoundRectangle 18" BackgroundColor="#E7E1D8" HeightRequest="250" Padding="16">
+                <Grid>
+                    <Label Text="PHÒNG KHÁCH SCANDINAVIAN" TextColor="#A34D16" FontSize="10" FontAttributes="Bold" VerticalOptions="Start"/>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="6">
+                        <Label Text="Sofa Oslo  ·  Bàn Oak  ·  Đèn Nordica" TextColor="#171717" FontSize="15" HorizontalTextAlignment="Center"/>
+                        <Label Text="Mô phỏng không gian 3D" TextColor="#737373" FontSize="11" HorizontalTextAlignment="Center"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+            <Label Text="Chọn món đồ trong set" FontSize="15" FontAttributes="Bold"/>
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Border StrokeShape="RoundRectangle 12" Background="White" Padding="8">
+                    <VerticalStackLayout><Label Text="Sofa Oslo" FontSize="11" TextColor="#171717"/><CheckBox IsChecked="{Binding SofaSelected}" Color="#78350F"/></VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" StrokeShape="RoundRectangle 12" Background="White" Padding="8">
+                    <VerticalStackLayout><Label Text="Bàn Oak" FontSize="11" TextColor="#171717"/><CheckBox IsChecked="{Binding TableSelected}" Color="#78350F"/></VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="2" StrokeShape="RoundRectangle 12" Background="White" Padding="8">
+                    <VerticalStackLayout><Label Text="Đèn" FontSize="11" TextColor="#171717"/><CheckBox IsChecked="{Binding LampSelected}" Color="#78350F"/></VerticalStackLayout>
+                </Border>
+            </Grid>
+        </VerticalStackLayout>
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Padding="0,14,0,0">
+            <VerticalStackLayout><Label Text="Tổng giá set" FontSize="11" TextColor="#737373"/><Label Text="{Binding SetTotalFormatted}" FontSize="18" TextColor="#78350F" FontAttributes="Bold"/></VerticalStackLayout>
+            <Button Grid.Column="1" Text="Thêm cả bộ vào giỏ" Command="{Binding AddSetToCartCommand}" Background="#171717" TextColor="White" CornerRadius="10" HeightRequest="44"/>
+        </Grid>
+    </Grid>
+</ContentPage>

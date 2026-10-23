@@ -1,0 +1,135 @@
+# ==============================
+# .gitignore cho .NET MAUI (CuaHangNoiThat)
+# ==============================
+
+# ============== NuGet / Paket ==============
+## Commit đang dùng? Xóa dòng dưới và commit packages.lock.json thay vào.
+packages/
+**/package-lock.json
+**/paket.lock
+
+# Global Nếu dùng NH농협 / SDK khác
+.nuget/
+?.nuspec
+?.nuspec.DotSettings
+
+# ============== Build outputs (.NET / MAUI) ==============
+bin/
+obj/
+appsettings.json
+appsettings.*.json
+
+# Auto-generated MSBuild files (làm phát sinh mỗi lần build, không nên commit)
+**/Microsoft.CSharp.targets
+**/Microsoft.VisualBasic.targets
+**/Microsoft.Common.targets
+**/Microsoft.NETCore.App.props
+**/*.AssemblyInfo.*.generated.cs
+**/*.XamlAssemblyInfo.*.generated.cs
+*.csproj.nuget.*.cache
+*.csproj.nuget.g.props
+*.csproj.nuget.g.targets
+*.csproj.nuget.dgspec.json
+*.csproj.nuget.props
+*.csproj.nuget.targets
+
+# ============== Android ==============
+android/
+**/AndroidManifest.xml
+**/Styles/Values/
+**/libs/
+**/*.apk
+**/*.aab
+**/*.apks
+**/*.jks
+**/*.keystore
+
+# ============== iOS ==============
+ios/
+**/*.pbxproj
+**/*.xcodeproj
+**/*.xcworkspace
+**/*.xcuserdata
+**/*.mobileprovision
+**/*.cert
+**/*.mobileprovision
+
+# ============== macOS (macOS / Mac Catalyst) ==============
+**/.DS_Store
+**/.AppleDouble
+**/.LSOverride
+**/*.swp
+**/*.swo
+**/*.tmp
+**/*.log
+
+# ============== Windows ==============
+**/Windows/
+**/*.user
+**/*.suo
+**/*.userprefs
+**/*.nuget.props
+**/*.nuget.targets
+**/*.nuget.cache
+**/*.nuget.g.targets
+**/*.nuget.dgspec.json
+**/*.nuget.props
+**/*.nuget.targets
+
+# ============== Visual Studio / VS Code / JetBrains ==============
+**.vs/
+**/.idea/
+**/.vscode/
+**/*.orig
+**/*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ============== macOS / Linux ==============
+**/.DS_Store
+**/.AppleDouble
+**/.LSOverride
+**/*.swp
+**/*.swo
+**/*.tmp
+**/*.log
+
+# ============== Android Emulator / Device ==============
+*.db
+*.db-wal
+*.db-shm
+
+# ============== Local / environment ==============
+.env
+.env.local
+*.local
+*.cp
+*.cp.history
+
+# ============== Java / Kotlin / Gradle ==============
+.gradle/
+build/
+**/bin/
+**/obj/
+**/Temp/
+**/coverage
+**/.netrdf
+**/*.iml
+**/*.ipr
+**/*.iws
+**/*.cache
+**/*.neighbors
+**/*.backup
+**/*.backup.9
+
+# ============== Misc ==============
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*.tmp
+*.log
+*.bak
+*.backup
+*.backup.9
