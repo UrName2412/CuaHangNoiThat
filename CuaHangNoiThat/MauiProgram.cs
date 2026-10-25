@@ -1,5 +1,9 @@
 using Microsoft.Extensions.Logging;
 
+#if MAUI_DEVFLOW
+using Microsoft.Maui.DevFlow.Agent;
+#endif
+
 namespace CuaHangNoiThat
 {
     public static class MauiProgram
@@ -14,6 +18,10 @@ namespace CuaHangNoiThat
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
+
+#if MAUI_DEVFLOW
+            builder.AddMauiDevFlowAgent();
+#endif
 
             builder.Services.AddSingleton<Controllers.HomeController>();
             builder.Services.AddSingleton<Controllers.CatalogController>();

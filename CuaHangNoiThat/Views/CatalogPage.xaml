@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:CuaHangNoiThat.Models"
              x:Class="CuaHangNoiThat.Views.CatalogPage"
-             Title="Danh mục"
+             Title="Sản phẩm"
              BackgroundColor="#FAFAF9">
     <Grid RowDefinitions="Auto,Auto,Auto,*">
         <VerticalStackLayout Grid.Row="0" Padding="12,12,12,8" Spacing="10">
