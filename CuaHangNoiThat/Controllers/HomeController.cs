@@ -3,9 +3,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CuaHangNoiThat.Models;
 
-namespace CuaHangNoiThat.ViewModels;
+namespace CuaHangNoiThat.Controllers;
 
-public partial class HomeViewModel : ObservableObject
+public partial class HomeController : ObservableObject
 {
     public ObservableCollection<FurnitureItem> FeaturedItems { get; } = new()
     {

@@ -2,9 +2,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CuaHangNoiThat.Models;
 
-namespace CuaHangNoiThat.ViewModels;
+namespace CuaHangNoiThat.Controllers;
 
-public partial class CartViewModel : ObservableObject
+public partial class CartController : ObservableObject
 {
     public FurnitureItem Item { get; } = new()
     {

@@ -1,9 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace CuaHangNoiThat.ViewModels;
+namespace CuaHangNoiThat.Controllers;
 
-public partial class RoomStagerViewModel : ObservableObject
+public partial class RoomStagerController : ObservableObject
 {
     [ObservableProperty]
     private bool sofaSelected = true;

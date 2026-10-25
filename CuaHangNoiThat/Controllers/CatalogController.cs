@@ -3,9 +3,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CuaHangNoiThat.Models;
 
-namespace CuaHangNoiThat.ViewModels;
+namespace CuaHangNoiThat.Controllers;
 
-public partial class CatalogViewModel : ObservableObject
+public partial class CatalogController : ObservableObject
 {
     private readonly List<FurnitureItem> allItems =
     [
@@ -22,7 +22,7 @@ public partial class CatalogViewModel : ObservableObject
     [ObservableProperty]
     private string selectedCategory = "Tất cả";
 
-    public CatalogViewModel() => FilterItems();
+    public CatalogController() => FilterItems();
 
     partial void OnSelectedCategoryChanged(string value) => FilterItems();
 

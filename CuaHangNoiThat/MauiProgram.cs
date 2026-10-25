@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace CuaHangNoiThat
 {
@@ -15,14 +15,14 @@ namespace CuaHangNoiThat
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            builder.Services.AddSingleton<ViewModels.HomeViewModel>();
-            builder.Services.AddSingleton<ViewModels.CatalogViewModel>();
-            builder.Services.AddSingleton<ViewModels.RoomStagerViewModel>();
-            builder.Services.AddSingleton<ViewModels.CartViewModel>();
-            builder.Services.AddSingleton<ViewModels.OrdersViewModel>();
+            builder.Services.AddSingleton<Controllers.HomeController>();
+            builder.Services.AddSingleton<Controllers.CatalogController>();
+            builder.Services.AddSingleton<Controllers.RoomStagerController>();
+            builder.Services.AddSingleton<Controllers.CartController>();
+            builder.Services.AddSingleton<Controllers.OrdersController>();
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
 
             return builder.Build();

@@ -1,4 +1,4 @@
-using CuaHangNoiThat.ViewModels;
+using CuaHangNoiThat.Controllers;
 
 namespace CuaHangNoiThat.Views;
 
@@ -7,6 +7,6 @@ public partial class RoomStagerPage : ContentPage
     public RoomStagerPage()
     {
         InitializeComponent();
-        BindingContext = new RoomStagerViewModel();
+        BindingContext = new RoomStagerController();
     }
 }
