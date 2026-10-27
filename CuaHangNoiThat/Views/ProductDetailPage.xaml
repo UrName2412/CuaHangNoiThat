@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
+             x:Class="CuaHangNoiThat.Views.ProductDetailPage"
+             x:DataType="controllers:ProductDetailController"
+             Title="Chi tiết sản phẩm"
+             BackgroundColor="{StaticResource PageBackground}">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="16,12,16,24" Spacing="18">
+                <Border HeightRequest="280" BackgroundColor="{StaticResource Secondary}" StrokeThickness="0" StrokeShape="RoundRectangle 24">
+                    <Grid>
+                        <Label Text="▧" FontSize="110" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                        <Image Source="{Binding Product.ImageName}" Aspect="AspectFit"/>
+                    </Grid>
+                </Border>
+                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="{StaticResource Primary}"/>
+                <VerticalStackLayout IsVisible="{Binding HasProduct}" Spacing="8">
+                    <Label Text="{Binding Product.Category}" Style="{StaticResource Eyebrow}"/>
+                    <Label Text="{Binding Product.Name}" FontSize="25" FontFamily="OpenSansSemibold" TextColor="{StaticResource TextPrimary}" MaxLines="3" LineBreakMode="WordWrap"/>
+                    <Label Text="{Binding Product.PriceFormatted}" FontSize="22" FontFamily="OpenSansSemibold" TextColor="{StaticResource Primary}"/>
+                    <BoxView HeightRequest="1" Color="#E9E1D9" Margin="0,6"/>
+                    <Label Text="Mô tả sản phẩm" Style="{StaticResource SectionTitle}"/>
+                    <Label Text="{Binding Product.Description}" Style="{StaticResource MutedLabel}" LineHeight="1.35" LineBreakMode="WordWrap"/>
+                    <Border Style="{StaticResource Card}" Padding="12" Margin="0,4,0,0">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <Label Text="✓" TextColor="{StaticResource Success}" FontSize="18"/>
+                            <Label Grid.Column="1" Text="Kiểm tra kỹ trước khi giao · Hỗ trợ tư vấn phối không gian" Style="{StaticResource MutedLabel}"/>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center"/>
+            </VerticalStackLayout>
+        </ScrollView>
+        <Border Grid.Row="1" BackgroundColor="{StaticResource Surface}" StrokeThickness="0" Padding="16,12">
+            <Button Text="THÊM VÀO GIỎ HÀNG  →" Style="{StaticResource PrimaryButton}" Command="{Binding AddToCartCommand}" IsEnabled="{Binding HasProduct}" HeightRequest="52"/>
+        </Border>
+    </Grid>
+</ContentPage>

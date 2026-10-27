@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using CuaHangNoiThat.Services;
 
 #if MAUI_DEVFLOW
 using Microsoft.Maui.DevFlow.Agent;
@@ -25,15 +26,25 @@ namespace CuaHangNoiThat
 
             builder.Services.AddSingleton<Controllers.HomeController>();
             builder.Services.AddSingleton<Controllers.CatalogController>();
-            builder.Services.AddSingleton<Controllers.RoomStagerController>();
             builder.Services.AddSingleton<Controllers.CartController>();
             builder.Services.AddSingleton<Controllers.OrdersController>();
+            builder.Services.AddSingleton<Controllers.AccountController>();
+            builder.Services.AddSingleton<Controllers.CheckoutController>();
+            builder.Services.AddSingleton<Controllers.AddressController>();
+            builder.Services.AddSingleton<Controllers.PromotionController>();
+            builder.Services.AddTransient<Controllers.ProductDetailController>();
+            builder.Services.AddSingleton(sp => new SupabaseService(new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(15)
+            }));
 
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
 
-            return builder.Build();
+            var app = builder.Build();
+            App.SetServices(app.Services);
+            return app;
         }
     }
 }

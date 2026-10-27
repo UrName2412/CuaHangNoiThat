@@ -133,3 +133,10 @@ Desktop.ini
 *.bak
 *.backup
 *.backup.9
+CuaHangNoiThat/Resources/Raw/supabase.json
+.codegraphy/settings.json
+.gitignore
+.codegraphy/graph.sqlite
+.codegraphy/meta.json
+.codegraphy/*
+implementation_plan.md

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:CuaHangNoiThat.Models"
+             xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
+             x:Class="CuaHangNoiThat.Views.AddressPage"
+             x:DataType="controllers:AddressController"
+             x:Name="PageRoot"
+             Title="Địa chỉ giao hàng"
+             BackgroundColor="#FAFAF9">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="12,12,12,18" Spacing="12">
+                <Label Text="Địa chỉ của tôi" FontSize="16" FontAttributes="Bold" TextColor="#241A15"/>
+                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="#A34D16"/>
+
+                <VerticalStackLayout IsVisible="{Binding HasAddresses}" BindableLayout.ItemsSource="{Binding Addresses}" Spacing="4">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="models:AddressDto">
+                            <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 12" Padding="12" Margin="0,4">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <Label Grid.Column="0" Text="{Binding DiChi}" FontSize="12" TextColor="#5A514A" VerticalOptions="Center" LineBreakMode="WordWrap"/>
+                                    <Button Grid.Column="1" Text="Xóa" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.DeleteAddressCommand}" CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="#A34D16" FontSize="10" HeightRequest="44"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Label Text="Bạn chưa có địa chỉ nào." IsVisible="{Binding HasNoAddresses}" FontSize="12" TextColor="#8A8580" HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Border Grid.Row="1" BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 16" StrokeThickness="0" Padding="12" Margin="0,8,0,0">
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Thêm địa chỉ mới" FontSize="14" FontAttributes="Bold" TextColor="#241A15"/>
+                <Entry Placeholder="Nhập địa chỉ chi tiết" Text="{Binding NewAddress}" FontSize="11" HeightRequest="44"/>
+                <Button Text="Lưu địa chỉ" Command="{Binding AddAddressCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="#191817" TextColor="White" CornerRadius="7" HeightRequest="44" FontSize="11" FontAttributes="Bold"/>
+                <Label Text="{Binding Message}" TextColor="#A34D16" FontSize="10" HorizontalTextAlignment="Center"/>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

@@ -1,23 +1,61 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using CuaHangNoiThat.Models;
+using CuaHangNoiThat.Services;
 
 namespace CuaHangNoiThat.Controllers;
 
 public partial class OrdersController : ObservableObject
 {
-    public ObservableCollection<OrderModel> Orders { get; } =
-    [
-        new() { Code = "MK-88219", Date = "19/10/2026", TotalAmount = 6700000, Status = OrderStatus.Shipping },
-        new() { Code = "MK-87910", Date = "12/10/2026", TotalAmount = 5200000, Status = OrderStatus.Delivered }
-    ];
+    private readonly SupabaseService supabase;
+    public ObservableCollection<OrderModel> Orders { get; } = new();
 
-    [RelayCommand]
-    private async Task SimulateNextAsync()
+    [ObservableProperty]
+    private bool isBusy;
+
+    [ObservableProperty]
+    private string errorMessage = string.Empty;
+
+    public bool IsNotBusy => !IsBusy;
+    public bool IsEmpty => !IsBusy && Orders.Count == 0;
+    public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
+
+    public OrdersController(SupabaseService supabase) => this.supabase = supabase;
+
+    public async Task LoadAsync()
     {
-        var order = Orders[0];
-        order.Status = order.Status == OrderStatus.Delivered ? OrderStatus.Pending : order.Status + 1;
-        await Shell.Current.DisplayAlertAsync("Đã cập nhật", $"Đơn #{order.Code}: {order.StatusLabel}", "Đóng");
+        try
+        {
+            if (IsBusy)
+                return;
+
+            IsBusy = true;
+            ErrorMessage = string.Empty;
+            Orders.Clear();
+            foreach (var order in await supabase.GetOrdersAsync())
+                Orders.Add(order);
+        }
+        catch (InvalidOperationException exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        catch (HttpRequestException exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Không thể tải đơn hàng: {exception.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+            OnPropertyChanged(nameof(IsNotBusy));
+            OnPropertyChanged(nameof(IsEmpty));
+            OnPropertyChanged(nameof(HasError));
+        }
     }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private Task RefreshAsync() => LoadAsync();
 }

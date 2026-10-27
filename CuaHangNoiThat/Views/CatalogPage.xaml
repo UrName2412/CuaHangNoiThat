@@ -2,51 +2,78 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:CuaHangNoiThat.Models"
+             xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
              x:Class="CuaHangNoiThat.Views.CatalogPage"
+             x:DataType="controllers:CatalogController"
+             x:Name="PageRoot"
              Title="Sản phẩm"
-             BackgroundColor="#FAFAF9">
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource PageBackground}">
     <Grid RowDefinitions="Auto,Auto,Auto,*">
-        <VerticalStackLayout Grid.Row="0" Padding="12,12,12,8" Spacing="10">
-            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                <HorizontalStackLayout Spacing="5"><Label Text="⌖" FontSize="17" TextColor="#A34D16"/><Label Text="TP. Hồ Chí Minh" FontSize="11" FontAttributes="Bold" VerticalTextAlignment="Center"/></HorizontalStackLayout>
-                <Label Grid.Column="1" Text="♡" FontSize="22" TextColor="#A34D16"/>
-                <Label Grid.Column="2" Text="🛍" FontSize="18"/>
+        <VerticalStackLayout Grid.Row="0" Padding="16,14,16,10" Spacing="12">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="MOKHA LIVING" Style="{StaticResource Eyebrow}"/>
+                    <Label Text="Chọn món đồ cho không gian của bạn" FontSize="20" FontFamily="OpenSansSemibold"/>
+                </VerticalStackLayout>
+                <Label Grid.Column="1" Text="♡" FontSize="28" TextColor="{StaticResource Primary}" VerticalTextAlignment="Center"/>
             </Grid>
-            <Border BackgroundColor="#F1F1F0" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="11,0"><Grid ColumnDefinitions="Auto,*"><Label Text="⌕" FontSize="18" TextColor="#8A8580" VerticalTextAlignment="Center"/><Entry Grid.Column="1" Placeholder="Tìm ghế sofa, bàn ăn gỗ, đèn gốm..." PlaceholderColor="#AAA5A0" FontSize="11" HeightRequest="40"/></Grid></Border>
+            <Border BackgroundColor="{StaticResource SurfaceMuted}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="12,0">
+                <Grid ColumnDefinitions="Auto,*">
+                    <Label Text="⌕" FontSize="20" TextColor="{StaticResource TextSecondary}" VerticalTextAlignment="Center"/>
+                    <Entry Grid.Column="1" Placeholder="Tìm sản phẩm, chất liệu..." PlaceholderColor="{StaticResource TextSecondary}" FontSize="13" HeightRequest="44" Text="{Binding SearchText}" ReturnType="Search"/>
+                </Grid>
+            </Border>
         </VerticalStackLayout>
         <ScrollView Grid.Row="1" Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-            <HorizontalStackLayout Padding="12,0,12,10" Spacing="8" BindableLayout.ItemsSource="{Binding Categories}">
+            <HorizontalStackLayout Padding="16,0,16,12" Spacing="8" BindableLayout.ItemsSource="{Binding Categories}">
                 <BindableLayout.ItemTemplate>
-                    <DataTemplate>
-                        <Button Text="{Binding}" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectCategoryCommand}" CommandParameter="{Binding}" Background="#FFFFFF" BorderColor="#E7E1DA" BorderWidth="1" TextColor="#5A514A" CornerRadius="18" Padding="14,4" FontSize="10" HeightRequest="34"/>
+                    <DataTemplate x:DataType="x:String">
+                        <Button Text="{Binding .}" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectCategoryCommand}" CommandParameter="{Binding .}" BackgroundColor="{StaticResource Surface}" BorderColor="#E4DAD0" BorderWidth="1" TextColor="{StaticResource TextPrimary}" FontFamily="OpenSansSemibold" CornerRadius="18" Padding="16,5" FontSize="11" HeightRequest="38"/>
                     </DataTemplate>
                 </BindableLayout.ItemTemplate>
             </HorizontalStackLayout>
         </ScrollView>
-        <Grid Grid.Row="2" Padding="12,0" ColumnDefinitions="*,Auto,Auto">
-            <Label Text="{Binding Items.Count, StringFormat='Hiển thị {0} thiết kế'}" TextColor="#8A8580" FontSize="10" VerticalTextAlignment="Center"/>
-            <Button Grid.Column="1" Text="Mọi mức giá⌄" BackgroundColor="White" TextColor="#5A514A" BorderColor="#E7E1DA" BorderWidth="1" CornerRadius="7" HeightRequest="30" FontSize="9" Padding="8,0"/>
-            <Button Grid.Column="2" Text="Nổi bật⌄" BackgroundColor="White" TextColor="#5A514A" BorderColor="#E7E1DA" BorderWidth="1" CornerRadius="7" HeightRequest="30" FontSize="9" Padding="8,0" Margin="5,0,0,0"/>
+        <Grid Grid.Row="2" Padding="16,0" ColumnDefinitions="*,Auto">
+            <Label Text="{Binding Items.Count, StringFormat='{0} thiết kế tuyển chọn'}" Style="{StaticResource MutedLabel}" VerticalTextAlignment="Center"/>
+            <Label Grid.Column="1" Text="Sắp xếp  ⌄" TextColor="{StaticResource TextPrimary}" FontSize="11" VerticalTextAlignment="Center"/>
         </Grid>
-        <CollectionView Grid.Row="3" ItemsSource="{Binding Items}" SelectionMode="None" Margin="12,8,12,0">
-            <CollectionView.ItemsLayout><GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="10"/></CollectionView.ItemsLayout>
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:FurnitureItem">
-                    <Border StrokeShape="RoundRectangle 12" BackgroundColor="White" Stroke="#ECE8E3" Padding="7">
-                        <VerticalStackLayout Spacing="4">
-                            <Border HeightRequest="108" BackgroundColor="#EAE1D7" StrokeThickness="0" StrokeShape="RoundRectangle 9"><Label Text="▧" FontSize="58" TextColor="#A34D16" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Border>
-                            <Label Text="Tiết kiệm 750.000 đ" BackgroundColor="#FFF8E7" TextColor="#A34D16" FontSize="8" Padding="5,2" HorizontalOptions="Start"/>
-                            <Label Text="{Binding Category}" FontSize="8" TextColor="#8A8580" TextTransform="Uppercase"/>
-                            <Label Text="{Binding Name}" FontSize="12" FontAttributes="Bold" TextColor="#241A15" MaxLines="1"/>
-                            <Label Text="{Binding Description}" FontSize="9" TextColor="#77716B" MaxLines="1"/>
-                            <Grid ColumnDefinitions="*,Auto">
-                                <Label Text="{Binding PriceFormatted}" FontSize="11" TextColor="#A34D16" FontAttributes="Bold" VerticalTextAlignment="Center"/>
-                                <Button Grid.Column="1" Text="+ Chọn" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.AddToCartCommand}" CommandParameter="{Binding}" BackgroundColor="#241A15" TextColor="White" CornerRadius="7" HeightRequest="30" FontSize="9" Padding="8,0"/>
+        <Grid Grid.Row="3">
+            <CollectionView ItemsSource="{Binding Items}" SelectionMode="None" Margin="16,10,16,0">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="10" VerticalItemSpacing="12"/>
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:FurnitureItem">
+                        <Border Style="{StaticResource Card}" Padding="8">
+                            <Grid RowDefinitions="118,Auto,44,44,Auto,44" RowSpacing="6">
+                                <Border Grid.Row="0" BackgroundColor="{StaticResource Secondary}" StrokeThickness="0" StrokeShape="RoundRectangle 12">
+                                    <Grid>
+                                        <Label Text="▧" FontSize="56" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                                        <Image Source="{Binding ImageName}" Aspect="AspectFill"/>
+                                    </Grid>
+                                </Border>
+                                <Label Grid.Row="1" Text="{Binding Category}" FontSize="10" TextColor="{StaticResource TextSecondary}" VerticalTextAlignment="End"/>
+                                <Label Grid.Row="2" Text="{Binding Name}" FontSize="13" FontFamily="OpenSansSemibold" MaxLines="2" LineBreakMode="TailTruncation" VerticalTextAlignment="Center"/>
+                                <Label Grid.Row="3" Text="{Binding Description}" FontSize="10" TextColor="{StaticResource TextSecondary}" MaxLines="2" LineBreakMode="TailTruncation" VerticalTextAlignment="Center"/>
+                                <Label Grid.Row="4" Text="{Binding PriceFormatted}" FontSize="13" FontFamily="OpenSansSemibold" TextColor="{StaticResource Primary}" VerticalTextAlignment="Center"/>
+                                <Grid Grid.Row="5" ColumnDefinitions="*,44" ColumnSpacing="6">
+                                    <Button Text="Chi tiết" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.OpenDetailsCommand}" CommandParameter="{Binding}" BackgroundColor="Transparent" BorderColor="#D8C8BA" BorderWidth="1" TextColor="{StaticResource TextPrimary}" CornerRadius="8" HeightRequest="44" Padding="4,0" FontSize="10"/>
+                                    <Button Grid.Column="1" Text="+" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.AddToCartCommand}" CommandParameter="{Binding}" Style="{StaticResource PrimaryButton}" CornerRadius="8" HeightRequest="44" WidthRequest="44" Padding="0" FontSize="17"/>
+                                </Grid>
                             </Grid>
-                        </VerticalStackLayout>
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="8">
+                        <Label Text="Chưa có thiết kế phù hợp" Style="{StaticResource SectionTitle}" HorizontalTextAlignment="Center"/>
+                        <Label Text="Thử chọn một nhóm sản phẩm khác." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/>
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+            </CollectionView>
+            <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="{StaticResource Primary}"/>
+            <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" VerticalOptions="End" Margin="16"/>
+        </Grid>
     </Grid>
 </ContentPage>

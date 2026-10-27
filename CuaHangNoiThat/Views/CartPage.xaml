@@ -1,31 +1,82 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:CuaHangNoiThat.Models"
+             xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
              x:Class="CuaHangNoiThat.Views.CartPage"
+             x:DataType="controllers:CartController"
+             x:Name="PageRoot"
              Title="Giỏ hàng"
-             BackgroundColor="#FAFAF9">
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource PageBackground}">
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="12,12,12,18" Spacing="12">
-                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                    <HorizontalStackLayout Spacing="5"><Label Text="⌖" FontSize="17" TextColor="#A34D16"/><Label Text="TP. Hồ Chí Minh" FontSize="11" FontAttributes="Bold" VerticalTextAlignment="Center"/></HorizontalStackLayout>
-                    <Label Grid.Column="1" Text="♡" FontSize="22" TextColor="#A34D16"/>
-                    <Label Grid.Column="2" Text="🛍" FontSize="18"/>
+            <VerticalStackLayout Padding="16,14,16,20" Spacing="16">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="MOKHA LIVING" Style="{StaticResource Eyebrow}"/>
+                        <Label Text="{Binding Items.Count, StringFormat='Giỏ hàng của bạn ({0})'}" FontSize="23" FontFamily="OpenSansSemibold"/>
+                    </VerticalStackLayout>
+                    <Label Grid.Column="1" Text="🛍" FontSize="24" VerticalTextAlignment="Center"/>
                 </Grid>
-                <Border BackgroundColor="#F1F1F0" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="11,0"><Grid ColumnDefinitions="Auto,*"><Label Text="⌕" FontSize="18" TextColor="#8A8580" VerticalTextAlignment="Center"/><Entry Grid.Column="1" Placeholder="Tìm ghế sofa, bàn ăn gỗ, đèn gốm..." PlaceholderColor="#AAA5A0" FontSize="11" HeightRequest="40"/></Grid></Border>
-                <Grid ColumnDefinitions="*,Auto"><Label Text="Giỏ hàng của bạn (1)" FontSize="18" FontAttributes="Bold"/><Label Grid.Column="1" Text="Giao hàng toàn quốc" TextColor="#8A8580" FontSize="9" VerticalTextAlignment="Center"/></Grid>
-                <Border BackgroundColor="#FFF8E7" Stroke="#F2C45A" StrokeShape="RoundRectangle 9" Padding="10"><Label Text="▰  Mua thêm 150.000 đ để được Miễn phí giao &amp; lắp đặt" TextColor="#9A5B0B" FontSize="10" FontAttributes="Bold"/></Border>
-                <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 12" Padding="8">
-                    <Grid ColumnDefinitions="65,*,Auto" ColumnSpacing="9">
-                        <Border BackgroundColor="#EAE1D7" StrokeThickness="0" StrokeShape="RoundRectangle 8"><Label Text="▧" FontSize="34" TextColor="#A34D16" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="{Binding Item.Name}" FontSize="11" FontAttributes="Bold"/><Label Text="{Binding Item.Description}" FontSize="9" TextColor="#77716B"/><Label Text="{Binding Item.PriceFormatted}" FontSize="11" TextColor="#A34D16" FontAttributes="Bold"/></VerticalStackLayout>
-                        <Grid Grid.Column="2" RowDefinitions="*,Auto" VerticalOptions="Center"><Label Text="⌫" TextColor="#B5B0AA" HorizontalTextAlignment="Center"/><Border Grid.Row="1" Stroke="#E7E1DA" StrokeShape="RoundRectangle 7" Padding="7,3"><Label Text="−  1  +" FontSize="10" TextColor="#5A514A"/></Border></Grid>
+                <Border BackgroundColor="#FFF5DC" Stroke="#E8C778" StrokeShape="RoundRectangle 12" Padding="12">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Label Text="✦" TextColor="{StaticResource Accent}" FontSize="18"/>
+                        <Label Grid.Column="1" Text="Đơn từ 500.000 đ được miễn phí giao &amp; lắp đặt." TextColor="#8A5E20" FontSize="11" VerticalTextAlignment="Center"/>
                     </Grid>
                 </Border>
-                <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 10" Padding="8"><Grid ColumnDefinitions="Auto,*,Auto"><Label Text="◇" TextColor="#AAA5A0" FontSize="16"/><Entry Grid.Column="1" Placeholder="Nhập mã giảm giá (VD: MOKHA500K)" FontSize="10" HeightRequest="34"/><Button Grid.Column="2" Text="Áp dụng" BackgroundColor="#241A15" TextColor="White" CornerRadius="7" FontSize="9" HeightRequest="30" Padding="10,0"/></Grid></Border>
-                <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 10" Padding="12"><Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="8"><Label Text="Tạm tính hàng hóa:" TextColor="#8A8580" FontSize="10"/><Label Grid.Column="1" Text="{Binding Subtotal}" FontSize="10"/><Label Grid.Row="1" Text="Phí vận chuyển &amp; lắp ráp:" TextColor="#8A8580" FontSize="10"/><Label Grid.Row="1" Grid.Column="1" Text="{Binding ShippingFee}" FontSize="10"/><BoxView Grid.Row="2" Grid.ColumnSpan="2" HeightRequest="1" Color="#EEEAE5"/><Label Grid.Row="2" Text="Tổng thanh toán:" FontSize="11" FontAttributes="Bold"/><Label Grid.Row="2" Grid.Column="1" Text="{Binding Total}" TextColor="#A34D16" FontSize="14" FontAttributes="Bold"/></Grid></Border>
-                <Button Text="TIẾN HÀNH THANH TOÁN   →" Command="{Binding CheckoutCommand}" BackgroundColor="#191817" TextColor="White" CornerRadius="9" HeightRequest="48" FontSize="11" FontAttributes="Bold"/>
+                <CollectionView ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:CartItemModel">
+                            <Border Style="{StaticResource Card}" Padding="10" Margin="0,0,0,10">
+                                <Grid ColumnDefinitions="72,*,Auto" ColumnSpacing="10">
+                                    <Border HeightRequest="84" BackgroundColor="{StaticResource Secondary}" StrokeThickness="0" StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                                        <Grid>
+                                            <Label Text="▧" FontSize="36" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                                            <Image Source="{Binding ImageName}" Aspect="AspectFill"/>
+                                        </Grid>
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                        <Label Text="{Binding ProductName}" FontSize="13" FontFamily="OpenSansSemibold" MaxLines="2"/>
+                                        <Label Text="{Binding UnitPriceFormatted}" FontSize="12" TextColor="{StaticResource Primary}"/>
+                                        <Label Text="{Binding TotalPriceFormatted}" FontSize="11" TextColor="{StaticResource TextSecondary}"/>
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="2" Spacing="5" VerticalOptions="Center">
+                                        <HorizontalStackLayout Spacing="0">
+                                            <Button Text="−" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.DecreaseQuantityCommand}" CommandParameter="{Binding}" BackgroundColor="{StaticResource SurfaceMuted}" TextColor="{StaticResource TextPrimary}" CornerRadius="7" WidthRequest="40" HeightRequest="40" Padding="0"/>
+                                            <Label Text="{Binding Quantity}" WidthRequest="28" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontFamily="OpenSansSemibold"/>
+                                            <Button Text="+" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.IncreaseQuantityCommand}" CommandParameter="{Binding}" BackgroundColor="{StaticResource SurfaceMuted}" TextColor="{StaticResource TextPrimary}" CornerRadius="7" WidthRequest="40" HeightRequest="40" Padding="0"/>
+                                        </HorizontalStackLayout>
+                                        <Button Text="Xóa" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.RemoveCartItemCommand}" CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" FontSize="10" HeightRequest="40" Padding="0"/>
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <VerticalStackLayout IsVisible="{Binding IsEmpty}" HorizontalOptions="Center" Spacing="8" Padding="20,28,20,20">
+                    <Label Text="Giỏ hàng đang trống" Style="{StaticResource SectionTitle}" FontSize="19" HorizontalTextAlignment="Center"/>
+                    <Label Text="Thêm một thiết kế bạn yêu thích để bắt đầu." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/>
+                    <Button Text="KHÁM PHÁ SẢN PHẨM" Command="{Binding GoToCatalogCommand}" Style="{StaticResource PrimaryButton}" FontSize="11" Margin="0,6,0,0"/>
+                </VerticalStackLayout>
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Tạm tính" Style="{StaticResource SectionTitle}" FontSize="16"/>
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                            <Label Text="Tiền hàng" Style="{StaticResource MutedLabel}"/>
+                            <Label Grid.Column="1" Text="{Binding Subtotal}" FontSize="12"/>
+                            <Label Grid.Row="1" Text="Giao &amp; lắp đặt" Style="{StaticResource MutedLabel}"/>
+                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding ShippingFee}" FontSize="12"/>
+                            <BoxView Grid.Row="2" Grid.ColumnSpan="2" HeightRequest="1" Color="#E9E1D9"/>
+                            <Label Grid.Row="2" Text="Tổng thanh toán" FontFamily="OpenSansSemibold"/>
+                            <Label Grid.Row="2" Grid.Column="1" Text="{Binding Total}" TextColor="{StaticResource Primary}" FontSize="16" FontFamily="OpenSansSemibold"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
             </VerticalStackLayout>
         </ScrollView>
+        <Border Grid.Row="1" BackgroundColor="{StaticResource Surface}" StrokeThickness="0" Padding="16,10">
+            <Button Text="TIẾN HÀNH THANH TOÁN  →" Command="{Binding CheckoutCommand}" IsEnabled="{Binding HasItems}" Style="{StaticResource PrimaryButton}" HeightRequest="52"/>
+        </Border>
     </Grid>
 </ContentPage>

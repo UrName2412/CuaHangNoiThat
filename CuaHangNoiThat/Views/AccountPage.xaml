@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
+             x:Class="CuaHangNoiThat.Views.AccountPage"
+             x:DataType="controllers:AccountController"
+             Title="Tài khoản"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource PageBackground}">
+    <Grid RowDefinitions="*">
+        <ScrollView>
+            <VerticalStackLayout Padding="16,18,16,28" Spacing="16">
+                <Label Text="Tài khoản của bạn" Style="{StaticResource SectionTitle}" FontSize="24"/>
+
+                <Border IsVisible="{Binding IsSignedIn}" BackgroundColor="{StaticResource Tertiary}" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="18">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="ĐÃ ĐĂNG NHẬP" TextColor="#F7BF35" FontSize="10" FontAttributes="Bold"/>
+                        <Label Text="{Binding User.FullName}" TextColor="White" FontSize="20" FontAttributes="Bold"/>
+                        <Label Text="{Binding User.Email}" TextColor="#D7D1CC" FontSize="12"/>
+                        <Button Text="Xem đơn hàng của tôi" Command="{Binding OpenOrdersCommand}" BackgroundColor="{StaticResource Accent}" TextColor="{StaticResource TextPrimary}" CornerRadius="10" HeightRequest="48" Margin="0,4,0,0"/>
+                        <Button Text="Đăng xuất" Command="{Binding LogoutCommand}" BackgroundColor="Transparent" TextColor="White" BorderColor="#8B8179" BorderWidth="1" CornerRadius="10" HeightRequest="44"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border IsVisible="{Binding IsSignedOut}" Style="{StaticResource Card}" Padding="16">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Text="Đăng nhập" Command="{Binding ShowLoginCommand}" BackgroundColor="#F1F1F0" TextColor="#241A15" CornerRadius="8"/>
+                            <Button Grid.Column="1" Text="Đăng ký" Command="{Binding ShowRegisterCommand}" BackgroundColor="#F1F1F0" TextColor="#241A15" CornerRadius="8"/>
+                        </Grid>
+                        <Border IsVisible="{Binding IsRegisterMode}" BackgroundColor="#F5F3F0" Stroke="#E7E1DA" StrokeShape="RoundRectangle 9" Padding="12,0">
+                            <Entry Placeholder="Họ và tên" Text="{Binding FullName}" TextColor="#241A15" PlaceholderColor="#8A8580" BackgroundColor="Transparent" HeightRequest="48"/>
+                        </Border>
+                        <Border BackgroundColor="#F5F3F0" Stroke="#E7E1DA" StrokeShape="RoundRectangle 9" Padding="12,0">
+                            <Entry Placeholder="Tên đăng nhập hoặc email" Text="{Binding UsernameOrEmail}" TextColor="#241A15" PlaceholderColor="#8A8580" BackgroundColor="Transparent" HeightRequest="48"/>
+                        </Border>
+                        <Border BackgroundColor="#F5F3F0" Stroke="#E7E1DA" StrokeShape="RoundRectangle 9" Padding="12,0">
+                            <Entry Placeholder="Mật khẩu" Text="{Binding Password}" TextColor="#241A15" PlaceholderColor="#8A8580" BackgroundColor="Transparent" IsPassword="True" HeightRequest="48"/>
+                        </Border>
+                        <Button IsVisible="{Binding IsRegisterMode}" Text="Tạo tài khoản" Command="{Binding RegisterCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="#191817" TextColor="White" CornerRadius="9" HeightRequest="44"/>
+                        <Button IsVisible="{Binding IsLoginMode}" Text="Đăng nhập" Command="{Binding LoginCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="#191817" TextColor="White" CornerRadius="9" HeightRequest="44"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="#A34D16"/>
+                <Label Text="{Binding Message}" TextColor="#A34D16" FontSize="12" HorizontalTextAlignment="Center"/>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

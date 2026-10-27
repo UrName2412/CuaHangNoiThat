@@ -2,25 +2,29 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:CuaHangNoiThat.Models"
+             xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
              x:Class="CuaHangNoiThat.Views.HomePage"
+             x:DataType="controllers:HomeController"
+             x:Name="PageRoot"
              Title="Trang chủ"
-             BackgroundColor="#FAFAF9">
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource PageBackground}">
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="12,12,12,24" Spacing="14">
+            <VerticalStackLayout Padding="16,14,16,24" Spacing="18">
                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                     <HorizontalStackLayout Spacing="5">
-                        <Label Text="⌖" FontSize="17" TextColor="#A34D16" />
-                        <Label Text="TP. Hồ Chí Minh" FontSize="11" FontAttributes="Bold" VerticalTextAlignment="Center"/>
-                        <Label Text="Thay đổi" FontSize="9" TextColor="#77716B" VerticalTextAlignment="Center"/>
+                        <Label Text="⌖" FontSize="17" TextColor="{StaticResource Primary}" />
+                        <Label Text="TP. Hồ Chí Minh" FontSize="12" FontAttributes="Bold" VerticalTextAlignment="Center"/>
+                        <Label Text="Thay đổi" Style="{StaticResource MutedLabel}" FontSize="10" VerticalTextAlignment="Center"/>
                     </HorizontalStackLayout>
                     <Label Grid.Column="1" Text="♡" FontSize="22" TextColor="#A34D16"/>
                     <Label Grid.Column="2" Text="🛍" FontSize="18" TextColor="#241A15"/>
                 </Grid>
-                <Border BackgroundColor="#F1F1F0" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="11,0">
+                <Border BackgroundColor="{StaticResource SurfaceMuted}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="11,0">
                     <Grid ColumnDefinitions="Auto,*">
                         <Label Text="⌕" FontSize="18" TextColor="#8A8580" VerticalTextAlignment="Center"/>
-                        <Entry Grid.Column="1" Placeholder="Tìm ghế sofa, bàn ăn gỗ, đèn gốm..." PlaceholderColor="#AAA5A0" FontSize="11" HeightRequest="40"/>
+                        <Entry Grid.Column="1" Placeholder="Tìm ghế sofa, bàn ăn gỗ, đèn gốm..." PlaceholderColor="#AAA5A0" FontSize="11" HeightRequest="40" ReturnType="Search" ReturnCommand="{Binding OpenCatalogCommand}"/>
                     </Grid>
                 </Border>
                 <Border HeightRequest="160" StrokeThickness="0" StrokeShape="RoundRectangle 18" BackgroundColor="#292725" Padding="14">
@@ -32,15 +36,15 @@
                             <Label Text="Nội thất gỗ sồi &amp; da thủ công cho ngôi nhà có gu." TextColor="#D7D1CC" FontSize="9"/>
                         </VerticalStackLayout>
                         <HorizontalStackLayout Grid.Row="2" Spacing="8">
-                            <Button Text="Xem bộ sưu tập  ›" Command="{Binding OpenCatalogCommand}" BackgroundColor="White" TextColor="#241A15" CornerRadius="8" FontSize="10" HeightRequest="34" Padding="12,0"/>
-                            <Button Text="◎  Thử phòng AR" BackgroundColor="Transparent" BorderColor="#F7BF35" BorderWidth="1" TextColor="#F7BF35" CornerRadius="8" FontSize="10" HeightRequest="34" Padding="10,0"/>
+                            <Button Text="Xem bộ sưu tập  ›" Command="{Binding OpenCatalogCommand}" BackgroundColor="White" TextColor="#241A15" CornerRadius="8" FontSize="10" HeightRequest="44" Padding="12,0"/>
                         </HorizontalStackLayout>
                     </Grid>
                 </Border>
                 <Grid ColumnDefinitions="*,Auto">
-                    <Label Text="Khám phá theo không gian" FontSize="14" FontAttributes="Bold"/>
-                    <Label Grid.Column="1" Text="Tất cả ›" TextColor="#A34D16" FontSize="10" VerticalTextAlignment="Center"/>
+                    <Label Text="Khám phá theo không gian" Style="{StaticResource SectionTitle}" FontSize="16"/>
+                    <Label Grid.Column="1" Text="Tất cả ›" TextColor="{StaticResource Primary}" FontSize="11" VerticalTextAlignment="Center"/>
                 </Grid>
+                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
                 <HorizontalStackLayout Spacing="8">
                     <Border WidthRequest="56" HeightRequest="68" BackgroundColor="White" Stroke="#EEEAE5" StrokeShape="RoundRectangle 10" Padding="6,5"><VerticalStackLayout Spacing="3"><Image Source="category_livingroom.svg" HeightRequest="29"/><Label Text="Phòng khách" FontSize="8" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/></VerticalStackLayout></Border>
                     <Border WidthRequest="56" HeightRequest="68" BackgroundColor="White" Stroke="#EEEAE5" StrokeShape="RoundRectangle 10" Padding="6,5"><VerticalStackLayout Spacing="3"><Image Source="category_lounge.svg" HeightRequest="29"/><Label Text="Ghế thư giãn" FontSize="8" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/></VerticalStackLayout></Border>
@@ -48,32 +52,42 @@
                     <Border WidthRequest="56" HeightRequest="68" BackgroundColor="White" Stroke="#EEEAE5" StrokeShape="RoundRectangle 10" Padding="6,5"><VerticalStackLayout Spacing="3"><Image Source="category_bedroom.svg" HeightRequest="29"/><Label Text="Phòng ngủ" FontSize="8" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/></VerticalStackLayout></Border>
                     <Border WidthRequest="56" HeightRequest="68" BackgroundColor="White" Stroke="#EEEAE5" StrokeShape="RoundRectangle 10" Padding="6,5"><VerticalStackLayout Spacing="3"><Image Source="category_lamp.svg" HeightRequest="29"/><Label Text="Đèn decor" FontSize="8" HorizontalTextAlignment="Center" LineBreakMode="TailTruncation"/></VerticalStackLayout></Border>
                 </HorizontalStackLayout>
-                <Border HeightRequest="116" StrokeThickness="0" StrokeShape="RoundRectangle 16" BackgroundColor="#2A2927" Padding="14">
-                    <Grid RowDefinitions="Auto,*,Auto">
-                        <Label Text="✦  CÔNG NGHỆ MỚI 2026" TextColor="#F7BF35" FontSize="9" FontAttributes="Bold"/>
-                        <Label Grid.Row="1" Text="Trải nghiệm Phòng Mẫu 3D AR" TextColor="White" FontSize="17" FontAttributes="Bold" VerticalTextAlignment="Center"/>
-                        <Button Grid.Row="2" Text="Mô phỏng thử 3D  →" BackgroundColor="#F7BF35" TextColor="#241A15" CornerRadius="9" FontSize="10" HorizontalOptions="Start" HeightRequest="32" Padding="12,0"/>
-                    </Grid>
-                </Border>
+                </ScrollView>
                 <Grid ColumnDefinitions="*,Auto">
                     <VerticalStackLayout Spacing="1"><Label Text="Thiết kế tuyển chọn" FontSize="14" FontAttributes="Bold"/><Label Text="Gia công thủ công · Giới hạn số lượng" FontSize="9" TextColor="#77716B"/></VerticalStackLayout>
                     <Label Grid.Column="1" Text="Xem thêm (6) ›" TextColor="#A34D16" FontSize="10" VerticalTextAlignment="Center"/>
                 </Grid>
-                <CollectionView ItemsSource="{Binding FeaturedItems}" HeightRequest="180" SelectionMode="None">
+                <CollectionView ItemsSource="{Binding FeaturedItems}" HeightRequest="202" SelectionMode="None">
                     <CollectionView.ItemsLayout><LinearItemsLayout Orientation="Horizontal" ItemSpacing="10"/></CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:FurnitureItem">
-                            <Border WidthRequest="145" BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 12" Padding="8">
-                                <VerticalStackLayout Spacing="3">
-                                    <Border HeightRequest="78" BackgroundColor="#E9E0D5" StrokeThickness="0" StrokeShape="RoundRectangle 9"><Label Text="▧" FontSize="42" TextColor="#A34D16" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Border>
-                                    <Label Text="{Binding Category}" FontSize="8" TextColor="#77716B"/>
-                                    <Label Text="{Binding Name}" FontSize="11" FontAttributes="Bold" MaxLines="1"/>
-                                    <Label Text="{Binding PriceFormatted}" FontSize="10" TextColor="#A34D16" FontAttributes="Bold"/>
-                                </VerticalStackLayout>
+                            <Border WidthRequest="156" HeightRequest="196" BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 12" Padding="8">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.OpenDetailsCommand}" CommandParameter="{Binding}"/>
+                                </Border.GestureRecognizers>
+                                <Grid RowDefinitions="78,Auto,36,Auto" RowSpacing="3">
+                                    <Border Grid.Row="0" BackgroundColor="#E9E0D5" StrokeThickness="0" StrokeShape="RoundRectangle 9">
+                                        <Grid>
+                                            <Label Text="▧" FontSize="42" TextColor="#A34D16" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
+                                            <Image Source="{Binding ImageName}" Aspect="AspectFill"/>
+                                        </Grid>
+                                    </Border>
+                                    <Label Grid.Row="1" Text="{Binding Category}" FontSize="8" TextColor="#77716B" VerticalTextAlignment="End"/>
+                                    <Label Grid.Row="2" Text="{Binding Name}" FontSize="11" FontAttributes="Bold" MaxLines="2" LineBreakMode="TailTruncation" VerticalTextAlignment="Center"/>
+                                    <Label Grid.Row="3" Text="{Binding PriceFormatted}" FontSize="11" TextColor="{StaticResource Primary}" FontAttributes="Bold" VerticalTextAlignment="Center"/>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="6">
+                            <Label Text="Chưa có thiết kế nổi bật" Style="{StaticResource SectionTitle}" FontSize="15" HorizontalTextAlignment="Center"/>
+                            <Label Text="Hãy thử lại sau ít phút." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/>
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
                 </CollectionView>
+                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="{StaticResource Primary}"/>
+                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Primary}" FontSize="11" HorizontalTextAlignment="Center"/>
             </VerticalStackLayout>
         </ScrollView>
     </Grid>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+xmlns:models="clr-namespace:CuaHangNoiThat.Models"
+xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
+x:Class="CuaHangNoiThat.Views.CheckoutPage"
+x:DataType="controllers:CheckoutController"
+x:Name="PageRoot"
+             Title="Thanh toán"
+             BackgroundColor="#FAFAF9">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="12,12,12,24" Spacing="14">
+                <Label Text="Thông tin giao hàng" FontSize="16" FontAttributes="Bold" TextColor="#241A15"/>
+                <Entry Placeholder="Họ và tên" Text="{Binding FullName}" FontSize="12" HeightRequest="44"/>
+                <Entry Placeholder="Email" Text="{Binding Email}" FontSize="12" HeightRequest="44"/>
+                <Entry Placeholder="Số điện thoại" Text="{Binding Phone}" FontSize="12" HeightRequest="44"/>
+
+                <Label Text="Địa chỉ giao hàng" FontSize="14" FontAttributes="Bold" TextColor="#241A15"/>
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Addresses}" Spacing="4">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="models:AddressDto">
+                            <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 10" Padding="12" Margin="0,4">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectAddressCommand}" CommandParameter="{Binding}"/>
+                                </Border.GestureRecognizers>
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding DiChi}" FontSize="11" TextColor="#5A514A" LineBreakMode="WordWrap"/>
+                                    <Button Text="Xóa" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.DeleteAddressCommand}" CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="#A34D16" FontSize="9" HorizontalOptions="Start" HeightRequest="40"/>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Border IsVisible="{Binding AddressMode}" BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 10" Padding="12,8">
+                    <VerticalStackLayout Spacing="8">
+                        <Entry Placeholder="Nhập địa chỉ giao hàng mới" Text="{Binding Address}" FontSize="11" HeightRequest="44"/>
+                        <Button Text="Dùng địa chỉ này" Command="{Binding SetAddressCommand}" BackgroundColor="#241A15" TextColor="White" CornerRadius="7" HeightRequest="44" FontSize="10"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="Mã giảm giá" FontSize="14" FontAttributes="Bold" TextColor="#241A15"/>
+                <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 10" Padding="12,0">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Entry Grid.Column="0" Placeholder="Nhập mã giảm giá (VD: MOKHA500K)" Text="{Binding VoucherCode}" FontSize="11" HeightRequest="44"/>
+                        <Button Grid.Column="1" Text="Áp dụng" Command="{Binding ApplyVoucherCommand}" BackgroundColor="#241A15" TextColor="White" CornerRadius="7" FontSize="9" HeightRequest="44" Padding="12,0"/>
+                    </Grid>
+                </Border>
+
+                <Label Text="{Binding Message}" TextColor="#A34D16" FontSize="11" HorizontalTextAlignment="Center"/>
+                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="#A34D16"/>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Border Grid.Row="1" BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 16" StrokeThickness="0" Padding="14">
+            <VerticalStackLayout Spacing="10">
+                <Label Text="Tổng cộng" FontSize="14" FontAttributes="Bold" TextColor="#241A15"/>
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Tổng tiền hàng:" TextColor="#8A8580" FontSize="10"/>
+                    <Label Grid.Column="1" Text="{Binding TotalAmount, StringFormat='{0:N0} đ'}" FontSize="10"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Giảm giá:" TextColor="#8A8580" FontSize="10"/>
+                    <Label Grid.Column="1" Text="{Binding VoucherDiscount, StringFormat='- {0:N0} đ'}" TextColor="#A34D16" FontSize="10"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Phí vận chuyển:" TextColor="#8A8580" FontSize="10"/>
+                    <Label Grid.Column="1" Text="250.000 đ" FontSize="10"/>
+                </Grid>
+                <BoxView HeightRequest="1" Color="#EEEAE5"/>
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Tổng thanh toán:" FontSize="13" FontAttributes="Bold" TextColor="#241A15"/>
+                    <Label Grid.Column="1" Text="{Binding TotalAmount, StringFormat='{0:N0} đ'}" FontSize="14" FontAttributes="Bold" TextColor="#A34D16"/>
+                </Grid>
+                <Button Text="XÁC NHẬN ĐƠN HÀNG" Command="{Binding ConfirmCheckoutCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="#191817" TextColor="White" CornerRadius="9" HeightRequest="48" FontSize="11" FontAttributes="Bold"/>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

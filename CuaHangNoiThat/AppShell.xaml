@@ -5,10 +5,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:CuaHangNoiThat.Views"
     Shell.FlyoutBehavior="Disabled"
-    Shell.TabBarBackgroundColor="#FFFFFF"
-    Shell.TabBarForegroundColor="#A34D16"
-    Shell.TabBarUnselectedColor="#77716B"
-    Shell.TabBarTitleColor="#A34D16">
+    Shell.TabBarBackgroundColor="{StaticResource Surface}"
+    Shell.TabBarForegroundColor="{StaticResource Primary}"
+    Shell.TabBarUnselectedColor="{StaticResource TextSecondary}"
+    Shell.TabBarTitleColor="{StaticResource Primary}">
 
     <TabBar>
         <Tab Title="Trang chủ" Icon="nav_home.svg" AutomationId="HomeTab">
@@ -17,14 +17,12 @@
         <Tab Title="Sản phẩm" Icon="nav_catalog.svg" AutomationId="CatalogTab">
             <ShellContent ContentTemplate="{DataTemplate views:CatalogPage}" Route="CatalogPage" />
         </Tab>
-        <Tab Title="Phòng AR" Icon="nav_room.svg" AutomationId="RoomTab">
-            <ShellContent ContentTemplate="{DataTemplate views:RoomStagerPage}" Route="RoomStagerPage" />
-        </Tab>
         <Tab Title="Giỏ hàng" Icon="nav_cart.svg" AutomationId="CartTab">
             <ShellContent ContentTemplate="{DataTemplate views:CartPage}" Route="CartPage" />
         </Tab>
-        <Tab Title="Đơn hàng" Icon="nav_orders.svg" AutomationId="OrdersTab">
-            <ShellContent ContentTemplate="{DataTemplate views:OrdersPage}" Route="OrdersPage" />
+        <Tab Title="Tài khoản" Icon="nav_account.svg" AutomationId="AccountTab">
+            <ShellContent ContentTemplate="{DataTemplate views:AccountPage}" Route="AccountPage" />
         </Tab>
     </TabBar>
+
 </Shell>
