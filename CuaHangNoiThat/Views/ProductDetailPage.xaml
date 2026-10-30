@@ -8,33 +8,100 @@
              BackgroundColor="{StaticResource PageBackground}">
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="16,12,16,24" Spacing="18">
-                <Border HeightRequest="280" BackgroundColor="{StaticResource Secondary}" StrokeThickness="0" StrokeShape="RoundRectangle 24">
+            <VerticalStackLayout Spacing="0">
+                <Border Margin="16,16,16,0"
+                        HeightRequest="320"
+                        BackgroundColor="{StaticResource Secondary}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 20">
                     <Grid>
-                        <Label Text="▧" FontSize="110" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                        <Image Source="{Binding Product.ImageName}" Aspect="AspectFit"/>
+                        <Label Text="▧"
+                               FontSize="88"
+                               TextColor="{StaticResource Primary}"
+                               HorizontalTextAlignment="Center"
+                               VerticalTextAlignment="Center"
+                               AutomationProperties.IsInAccessibleTree="False" />
+                        <Image Source="{Binding Product.ImageName}"
+                               Aspect="AspectFit"
+                               SemanticProperties.Description="{Binding Product.Name, StringFormat='Ảnh {0}'}" />
                     </Grid>
                 </Border>
-                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="{StaticResource Primary}"/>
-                <VerticalStackLayout IsVisible="{Binding HasProduct}" Spacing="8">
-                    <Label Text="{Binding Product.Category}" Style="{StaticResource Eyebrow}"/>
-                    <Label Text="{Binding Product.Name}" FontSize="25" FontFamily="OpenSansSemibold" TextColor="{StaticResource TextPrimary}" MaxLines="3" LineBreakMode="WordWrap"/>
-                    <Label Text="{Binding Product.PriceFormatted}" FontSize="22" FontFamily="OpenSansSemibold" TextColor="{StaticResource Primary}"/>
-                    <BoxView HeightRequest="1" Color="#E9E1D9" Margin="0,6"/>
-                    <Label Text="Mô tả sản phẩm" Style="{StaticResource SectionTitle}"/>
-                    <Label Text="{Binding Product.Description}" Style="{StaticResource MutedLabel}" LineHeight="1.35" LineBreakMode="WordWrap"/>
-                    <Border Style="{StaticResource Card}" Padding="12" Margin="0,4,0,0">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                            <Label Text="✓" TextColor="{StaticResource Success}" FontSize="18"/>
-                            <Label Grid.Column="1" Text="Kiểm tra kỹ trước khi giao · Hỗ trợ tư vấn phối không gian" Style="{StaticResource MutedLabel}"/>
-                        </Grid>
+
+                <ActivityIndicator IsVisible="{Binding IsBusy}"
+                                   IsRunning="{Binding IsBusy}"
+                                   Color="{StaticResource Primary}"
+                                   Margin="0,12" />
+
+                <VerticalStackLayout IsVisible="{Binding HasProduct}"
+                                     Padding="20,20,20,28"
+                                     Spacing="14">
+                    <Label Text="{Binding Product.Category}"
+                           Style="{StaticResource Eyebrow}"
+                           FontSize="12" />
+                    <Label Text="{Binding Product.Name}"
+                           Style="{StaticResource PageTitle}"
+                           MaxLines="4" />
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="{Binding Product.PriceFormatted}"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="24"
+                               TextColor="{StaticResource Primary}" />
+                        <HorizontalStackLayout Spacing="8" IsVisible="{Binding Product.HasDiscount}">
+                            <Label Text="{Binding Product.OriginalPriceFormatted}"
+                                   Style="{StaticResource Caption}"
+                                   TextDecorations="Strikethrough"
+                                   VerticalTextAlignment="Center" />
+                            <Label Text="{Binding Product.DiscountFormatted}"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="13"
+                                   TextColor="{StaticResource Primary}"
+                                   VerticalTextAlignment="Center" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+
+                    <Border HorizontalOptions="Start"
+                            Padding="12,7"
+                            BackgroundColor="{StaticResource SurfaceMuted}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 12">
+                        <Label Text="{Binding Product.StockAvailable, StringFormat='Còn {0} sản phẩm'}"
+                               Style="{StaticResource Caption}"
+                               TextColor="{StaticResource TextPrimary}" />
                     </Border>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource BorderSubtle}" Margin="0,2" />
+                    <Label Text="Thông tin sản phẩm" Style="{StaticResource SectionTitle}" />
+                    <Label Text="{Binding Product.Description}"
+                           Style="{StaticResource BodyText}"
+                           TextColor="{StaticResource TextSecondary}"
+                           LineHeight="1.4" />
                 </VerticalStackLayout>
-                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center"/>
+
+                <Border IsVisible="{Binding HasError}"
+                        Margin="20,8,20,24"
+                        Padding="14"
+                        BackgroundColor="{StaticResource Surface}"
+                        Stroke="{StaticResource BorderSubtle}"
+                        StrokeShape="RoundRectangle 12">
+                    <Label Text="{Binding ErrorMessage}"
+                           Style="{StaticResource BodyText}"
+                           TextColor="{StaticResource Danger}"
+                           HorizontalTextAlignment="Center" />
+                </Border>
             </VerticalStackLayout>
         </ScrollView>
-        <Border Grid.Row="1" BackgroundColor="{StaticResource Surface}" StrokeThickness="0" Padding="16,12">
-            <Button Text="THÊM VÀO GIỎ HÀNG  →" Style="{StaticResource PrimaryButton}" Command="{Binding AddToCartCommand}" IsEnabled="{Binding HasProduct}" HeightRequest="52"/>
+
+        <Border Grid.Row="1"
+                BackgroundColor="{StaticResource Surface}"
+                StrokeThickness="0"
+                Padding="16,12">
+            <Button Text="THÊM VÀO GIỎ HÀNG  →"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding AddToCartCommand}"
+                    IsEnabled="{Binding Product.IsInStock}"
+                    HeightRequest="52"
+                    SemanticProperties.Hint="Thêm sản phẩm này vào giỏ hàng" />
         </Border>
     </Grid>
 </ContentPage>

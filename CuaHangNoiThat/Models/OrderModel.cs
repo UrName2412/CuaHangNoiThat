@@ -21,6 +21,8 @@ public partial class OrderModel : ObservableObject
     public decimal TotalAmount { get; init; }
     public string TotalAmountFormatted => TotalAmount.ToString("N0") + " đ";
     public string Date { get; init; } = string.Empty;
+    public int Status { get; init; }
+    public string StatusText => Status switch { 0 => "Đã hủy", 2 => "Hoàn thành", _ => "Đang xử lý" };
 
     [ObservableProperty]
     private ObservableCollection<OrderItemModel> items = new();

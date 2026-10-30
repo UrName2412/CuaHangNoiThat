@@ -20,6 +20,7 @@ public partial class ProductDetailController : ObservableObject
     private string errorMessage = string.Empty;
 
     public bool HasProduct => Product is not null;
+    public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
     public bool IsNotBusy => !IsBusy;
 
     public ProductDetailController(SupabaseService supabase, CartController cart)
@@ -27,6 +28,8 @@ public partial class ProductDetailController : ObservableObject
         this.supabase = supabase;
         this.cart = cart;
     }
+
+    partial void OnErrorMessageChanged(string value) => OnPropertyChanged(nameof(HasError));
 
     public async Task LoadAsync(int id)
     {
@@ -57,7 +60,7 @@ public partial class ProductDetailController : ObservableObject
     [RelayCommand]
     private void AddToCart()
     {
-        if (Product is null)
+        if (Product is null || Product.StockAvailable <= 0)
             return;
 
         cart.AddItem(new CartItemModel
@@ -66,7 +69,8 @@ public partial class ProductDetailController : ObservableObject
             ProductName = Product.Name,
             Quantity = 1,
             UnitPrice = Product.Price,
-            ImageName = Product.ImageName
+            ImageName = Product.ImageName,
+            StockAvailable = Product.StockAvailable
         });
     }
 }

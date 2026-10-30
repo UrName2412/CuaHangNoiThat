@@ -37,9 +37,12 @@ public partial class CartController : ObservableObject
         if (item is null)
             return;
 
+        if (item.StockAvailable <= 0)
+            return;
+
         var existing = Items.FirstOrDefault(i => i.ProductId == item.ProductId);
         if (existing is not null)
-            existing.SetQuantity(existing.Quantity + item.Quantity);
+            existing.SetQuantity(Math.Min(existing.StockAvailable, existing.Quantity + item.Quantity));
         else
             Items.Add(item);
         OnPropertyChanged(nameof(Subtotal));
@@ -94,7 +97,11 @@ public partial class CartController : ObservableObject
     }
 
     [RelayCommand]
-    private void IncreaseQuantity(CartItemModel item) => UpdateQuantity(item.ProductId, item.Quantity + 1);
+    private void IncreaseQuantity(CartItemModel item)
+    {
+        if (item.CanIncreaseQuantity)
+            UpdateQuantity(item.ProductId, item.Quantity + 1);
+    }
 
     [RelayCommand]
     private void DecreaseQuantity(CartItemModel item)

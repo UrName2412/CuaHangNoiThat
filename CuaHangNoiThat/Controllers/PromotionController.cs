@@ -25,8 +25,8 @@ public partial class PromotionController : ObservableObject
     public bool IsNotBusy => !IsBusy;
     public bool HasPromotions => Promotions.Count > 0;
     public bool HasVouchers => Vouchers.Count > 0;
-    public bool HasNoPromotions => !HasPromotions;
-    public bool HasNoVouchers => !HasVouchers;
+    public bool HasNoPromotions => !IsBusy && !HasPromotions;
+    public bool HasNoVouchers => !IsBusy && !HasVouchers;
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
     public PromotionController(SupabaseService supabase) => this.supabase = supabase;

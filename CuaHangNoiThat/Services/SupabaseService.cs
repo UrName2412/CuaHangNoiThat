@@ -71,7 +71,8 @@ public sealed class SupabaseService
         currentUser = new AuthenticatedUser(
             customer.IdKhachhang.Value.ToString(),
             customer.Email ?? loginValue,
-            customer.HoTen ?? loginValue);
+            customer.HoTen ?? loginValue,
+            customer.Sdt ?? string.Empty);
         await SecureStorage.Default.SetAsync("supabase_user", JsonSerializer.Serialize(currentUser, JsonOptions));
         return currentUser;
     }
@@ -87,18 +88,13 @@ public sealed class SupabaseService
         if (existing.Count > 0)
             throw new InvalidOperationException("Email này đã được đăng ký. Hãy dùng email khác.");
 
-        var customers = await FetchListAsync<CustomerDto>(
-            config,
-            "/rest/v1/khachhang?select=id_khachhang&order=id_khachhang.desc&limit=1",
-            cancellationToken);
-        var newId = (customers.FirstOrDefault()?.IdKhachhang ?? 0) + 1;
-
-        await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/khachhang", new
+        var createdCustomers = await SendJsonReturningAsync<CustomerDto>(config, HttpMethod.Post, "/rest/v1/khachhang?select=id_khachhang", new
         {
-            id_khachhang = newId,
             hoten = fullName.Trim(),
             email = normalizedEmail
         }, cancellationToken);
+        var newId = createdCustomers.FirstOrDefault()?.IdKhachhang
+            ?? throw new HttpRequestException("Supabase không trả về mã khách hàng vừa tạo.");
 
         await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/dangnhap", new
         {
@@ -109,7 +105,7 @@ public sealed class SupabaseService
             trangthai = 1
         }, cancellationToken);
 
-        currentUser = new AuthenticatedUser(newId.ToString(), normalizedEmail, fullName.Trim());
+        currentUser = new AuthenticatedUser(newId.ToString(), normalizedEmail, fullName.Trim(), string.Empty);
         await SecureStorage.Default.SetAsync("supabase_user", JsonSerializer.Serialize(currentUser, JsonOptions));
         return currentUser;
     }
@@ -164,7 +160,7 @@ public sealed class SupabaseService
     {
         var customers = await FetchListAsync<CustomerDto>(
             config,
-            $"/rest/v1/khachhang?select=id_khachhang,hoten,email&id_khachhang=eq.{customerId}&limit=1",
+            $"/rest/v1/khachhang?select=id_khachhang,hoten,email,sdt&id_khachhang=eq.{customerId}&limit=1",
             cancellationToken);
         return customers.FirstOrDefault();
     }
@@ -287,7 +283,7 @@ public sealed class SupabaseService
         var config = await configuration;
         var products = await FetchListAsync<ProductDto>(
             config,
-            $"/rest/v1/sanpham?select=*&id_sanpham=eq.{id}&trangthai=eq.1&limit=1",
+            $"/rest/v1/sanpham?select=*,kmtheosanpham(phantram,chuongtrinhkhuyenmai(ngaybd,ngaykt,trangthai))&id_sanpham=eq.{id}&isdeleted=eq.0&trangthai=eq.1&limit=1",
             cancellationToken);
         return products.FirstOrDefault();
     }
@@ -325,9 +321,25 @@ public sealed class SupabaseService
                 ?? woodMap.GetValueOrDefault(product.IdMaGo.GetValueOrDefault())
                 ?? "Nội thất",
             Description = product.MoTa ?? string.Empty,
-            Price = product.DonGia.GetValueOrDefault(),
+            Price = product.DonGia.GetValueOrDefault() * (1 - GetProductDiscount(product) / 100m),
+            OriginalPrice = product.DonGia.GetValueOrDefault(),
+            DiscountPercent = GetProductDiscount(product),
+            StockAvailable = Math.Max(0, product.SoLuong.GetValueOrDefault()),
             ImageName = GetStorageImageUrl(config, product.HinhAnh),
         };
+
+    private static decimal GetProductDiscount(ProductDto product)
+    {
+        var today = DateTime.UtcNow.Date;
+        return product.Promotions
+            .Where(p => p.Promotion?.TrangThai == 1 &&
+                        p.Promotion.NgayBd.HasValue && p.Promotion.NgayBd.Value.Date <= today &&
+                        p.Promotion.NgayKt.HasValue && p.Promotion.NgayKt.Value.Date >= today)
+            .Select(p => p.PhanTram.GetValueOrDefault())
+            .Where(percent => percent > 0 && percent <= 100)
+            .DefaultIfEmpty(0)
+            .Max();
+    }
 
     private static string? GetStorageImageUrl(SupabaseConfiguration config, string? imagePath)
     {
@@ -355,32 +367,83 @@ public sealed class SupabaseService
         var customerId = GetCurrentCustomerId();
         return await FetchListAsync<AddressDto>(
             config,
-            $"/rest/v1/diachigiaohang?select=diachi,id_khachhang&id_khachhang=eq.{customerId}",
+            $"/rest/v1/diachigiaohang?select=id_diachi,id_khachhang,tinhthanh,phuongxa,duong,macdinh&id_khachhang=eq.{customerId}&order=macdinh.desc,id_diachi.desc",
             cancellationToken);
     }
 
-    public async Task AddAddressAsync(string address, CancellationToken cancellationToken = default)
+    public async Task AddAddressAsync(int provinceCode, int wardCode, string street, bool makeDefault, CancellationToken cancellationToken = default)
     {
         var config = await configuration;
         var customerId = GetCurrentCustomerId();
+        if (makeDefault)
+            await UpdateAsync(config, $"/rest/v1/diachigiaohang?macdinh=eq.1&id_khachhang=eq.{customerId}", new { macdinh = 0 }, cancellationToken);
         await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/diachigiaohang", new
         {
-            diachi = address.Trim(),
-            id_khachhang = customerId
+            id_khachhang = customerId,
+            tinhthanh = provinceCode,
+            phuongxa = wardCode,
+            duong = street.Trim(),
+            macdinh = makeDefault ? 1 : 0
         }, cancellationToken);
     }
 
-    public async Task DeleteAddressAsync(string address, CancellationToken cancellationToken = default)
+    public async Task DeleteAddressAsync(int addressId, CancellationToken cancellationToken = default)
     {
         var config = await configuration;
         var customerId = GetCurrentCustomerId();
+        var oldAddress = (await GetAddressesAsync(cancellationToken)).FirstOrDefault(a => a.IdDiaChi == addressId);
         using var request = CreateRequest(
             config,
             HttpMethod.Delete,
-            $"/rest/v1/diachigiaohang?diachi=eq.{Uri.EscapeDataString(address)}&id_khachhang=eq.{customerId}",
+            $"/rest/v1/diachigiaohang?id_diachi=eq.{addressId}&id_khachhang=eq.{customerId}",
             useAccessToken: false);
         using var response = await httpClient.SendAsync(request, cancellationToken);
         await EnsureSuccessAsync(response);
+        if (oldAddress?.MacDinh == 1)
+        {
+            var nextAddress = (await GetAddressesAsync(cancellationToken)).FirstOrDefault();
+            if (nextAddress is not null)
+                await SetDefaultAddressAsync(nextAddress.IdDiaChi, cancellationToken);
+        }
+    }
+
+    public async Task SetDefaultAddressAsync(int addressId, CancellationToken cancellationToken = default)
+    {
+        var config = await configuration;
+        var customerId = GetCurrentCustomerId();
+        await UpdateAsync(config, $"/rest/v1/diachigiaohang?id_khachhang=eq.{customerId}", new { macdinh = 0 }, cancellationToken);
+        await UpdateAsync(config, $"/rest/v1/diachigiaohang?id_diachi=eq.{addressId}&id_khachhang=eq.{customerId}", new { macdinh = 1 }, cancellationToken);
+    }
+
+    public async Task ChangePasswordAsync(string currentPassword, string newPassword, CancellationToken cancellationToken = default)
+    {
+        var config = await configuration;
+        var customerId = GetCurrentCustomerId();
+        if (newPassword.Trim().Length < 6)
+            throw new InvalidOperationException("Mật khẩu mới phải có ít nhất 6 ký tự.");
+        var accounts = await FetchListAsync<LoginAccountDto>(config,
+            $"/rest/v1/dangnhap?select=matkhau&id_khachhang=eq.{customerId}&loaitaikhoan=eq.KHACHHANG&trangthai=eq.1&limit=1", cancellationToken);
+        var account = accounts.FirstOrDefault();
+        if (account?.MatKhau is null || !VerifyPassword(currentPassword, account.MatKhau))
+            throw new InvalidOperationException("Mật khẩu hiện tại không đúng.");
+        await UpdateAsync(config, $"/rest/v1/dangnhap?id_khachhang=eq.{customerId}&loaitaikhoan=eq.KHACHHANG",
+            new { matkhau = HashPassword(newPassword) }, cancellationToken);
+    }
+
+    public async Task UpdateProfileAsync(string fullName, string email, string phone, CancellationToken cancellationToken = default)
+    {
+        var config = await configuration;
+        var customerId = GetCurrentCustomerId();
+        await UpdateAsync(config, $"/rest/v1/dangnhap?id_khachhang=eq.{customerId}&loaitaikhoan=eq.KHACHHANG", new
+        {
+            tendangnhap = email.Trim()
+        }, cancellationToken);
+        await UpdateAsync(config, $"/rest/v1/khachhang?id_khachhang=eq.{customerId}", new
+        {
+            hoten = fullName.Trim(), email = email.Trim(), sdt = phone.Trim()
+        }, cancellationToken);
+        currentUser = currentUser! with { FullName = fullName.Trim(), Email = email.Trim(), Phone = phone.Trim() };
+        await SecureStorage.Default.SetAsync("supabase_user", JsonSerializer.Serialize(currentUser, JsonOptions));
     }
 
     public async Task<int> CreateOrderAsync(
@@ -398,7 +461,7 @@ public sealed class SupabaseService
         var created = await SendJsonReturningAsync<OrderDto>(config, HttpMethod.Post, "/rest/v1/hoadon?select=id_hoadon", new
         {
             ngaydat = DateTime.UtcNow.Date.ToString("yyyy-MM-dd"),
-            diachigiaohang = order.DiaChiGiaoHang,
+            id_diachigiaohang = order.IdDiaChiGiaoHang,
             tongtien = order.TongTien,
             trangthai = 1,
             id_khachhang = customerId,
@@ -439,21 +502,25 @@ public sealed class SupabaseService
     public async Task<IReadOnlyList<VoucherDto>> GetVouchersAsync(CancellationToken cancellationToken = default)
     {
         var config = await configuration;
+        var today = DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
         return await FetchListAsync<VoucherDto>(
             config,
-            "/rest/v1/kmtheovoucher?select=*&soluong=gt.0",
+            $"/rest/v1/kmtheovoucher?select=id_voucher,id_mactkm,phantram,soluong,chuongtrinhkhuyenmai!inner(tenctkm,ngaybd,ngaykt,trangthai)&soluong=gt.0&chuongtrinhkhuyenmai.trangthai=eq.1&chuongtrinhkhuyenmai.ngaybd=lte.{today}&chuongtrinhkhuyenmai.ngaykt=gte.{today}",
             cancellationToken);
     }
 
     public async Task<decimal> ApplyVoucherAsync(string voucherCode, decimal orderTotal, CancellationToken cancellationToken = default)
     {
         var config = await configuration;
+        var today = DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
         var vouchers = await FetchListAsync<VoucherDto>(
             config,
-            $"/rest/v1/kmtheovoucher?select=*&id_voucher=eq.{Uri.EscapeDataString(voucherCode.Trim())}&soluong=gt.0&limit=1",
+            $"/rest/v1/kmtheovoucher?select=id_voucher,id_mactkm,phantram,soluong,chuongtrinhkhuyenmai!inner(ngaybd,ngaykt,trangthai)&id_voucher=eq.{Uri.EscapeDataString(voucherCode.Trim())}&soluong=gt.0&chuongtrinhkhuyenmai.trangthai=eq.1&chuongtrinhkhuyenmai.ngaybd=lte.{today}&chuongtrinhkhuyenmai.ngaykt=gte.{today}&limit=1",
             cancellationToken);
         var voucher = vouchers.FirstOrDefault();
-        if (voucher?.PhanTram is null || voucher.SoLuong <= 0)
+        if (voucher?.PhanTram is null || voucher.SoLuong <= 0 || voucher.Promotion is null ||
+            voucher.Promotion.TrangThai != 1 || voucher.Promotion.NgayBd?.Date > DateTime.UtcNow.Date ||
+            voucher.Promotion.NgayKt?.Date < DateTime.UtcNow.Date)
             return 0;
         return Math.Min(orderTotal, orderTotal * voucher.PhanTram.Value / 100m);
     }
@@ -466,7 +533,7 @@ public sealed class SupabaseService
 
         var orders = await FetchListAsync<OrderDto>(
             config,
-            $"/rest/v1/hoadon?select=id_hoadon,ngaydat,ngaygiao,tongtien&id_khachhang=eq.{Uri.EscapeDataString(currentUser.Id)}&order=ngaydat.desc",
+            $"/rest/v1/hoadon?select=id_hoadon,ngaydat,ngaygiao,tongtien,trangthai&id_khachhang=eq.{Uri.EscapeDataString(currentUser.Id)}&order=ngaydat.desc",
             cancellationToken);
 
         var result = new List<OrderModel>();
@@ -483,6 +550,7 @@ public sealed class SupabaseService
                 OrderId = o.IdHoadon.ToString(),
                 Date = o.Ngaydat?.ToString("dd/MM/yyyy") ?? string.Empty,
                 TotalAmount = o.Tongtien ?? 0,
+                Status = o.TrangThai,
                 Items = new ObservableCollection<OrderItemModel>(items.Select(i => new OrderItemModel
                 {
                     ProductName = i.TenSanPham ?? "Sản phẩm",
@@ -498,7 +566,7 @@ public sealed class SupabaseService
 
     private async Task<IReadOnlyList<ProductDto>> FetchProductsAsync(SupabaseConfiguration config, CancellationToken cancellationToken)
     {
-        using var request = CreateRequest(config, HttpMethod.Get, "/rest/v1/sanpham?select=*&trangthai=eq.1&order=id_sanpham");
+        using var request = CreateRequest(config, HttpMethod.Get, "/rest/v1/sanpham?select=*,kmtheosanpham(phantram,chuongtrinhkhuyenmai(ngaybd,ngaykt,trangthai))&isdeleted=eq.0&trangthai=eq.1&order=id_sanpham");
         using var response = await httpClient.SendAsync(request, cancellationToken);
         await EnsureSuccessAsync(response);
         return await response.Content.ReadFromJsonAsync<IReadOnlyList<ProductDto>>(JsonOptions, cancellationToken) ?? [];
@@ -534,6 +602,14 @@ public sealed class SupabaseService
         CancellationToken cancellationToken)
     {
         using var request = CreateRequest(config, method, path, useAccessToken: false);
+        request.Content = JsonContent.Create(payload, options: JsonOptions);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        await EnsureSuccessAsync(response);
+    }
+
+    private async Task UpdateAsync(SupabaseConfiguration config, string path, object payload, CancellationToken cancellationToken)
+    {
+        using var request = CreateRequest(config, HttpMethod.Patch, path, useAccessToken: false);
         request.Content = JsonContent.Create(payload, options: JsonOptions);
         using var response = await httpClient.SendAsync(request, cancellationToken);
         await EnsureSuccessAsync(response);
@@ -634,6 +710,7 @@ public sealed class SupabaseService
         [JsonPropertyName("ngaydat")] public DateTime? Ngaydat { get; set; }
         [JsonPropertyName("ngaygiao")] public DateTime? Ngaygiao { get; set; }
         [JsonPropertyName("tongtien")] public decimal? Tongtien { get; set; }
+        [JsonPropertyName("trangthai")] public int TrangThai { get; set; }
     }
 
     private sealed class CustomerDto
@@ -641,6 +718,7 @@ public sealed class SupabaseService
         [JsonPropertyName("id_khachhang")] public int? IdKhachhang { get; set; }
         [JsonPropertyName("hoten")] public string? HoTen { get; set; }
         [JsonPropertyName("email")] public string? Email { get; set; }
+        [JsonPropertyName("sdt")] public string? Sdt { get; set; }
     }
 
     private sealed class LoginAccountDto
@@ -658,4 +736,4 @@ public sealed class SupabaseService
     }
 }
 
-public sealed record AuthenticatedUser(string Id, string Email, string FullName);
+public sealed record AuthenticatedUser(string Id, string Email, string FullName, string Phone = "");

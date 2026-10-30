@@ -4,6 +4,9 @@ namespace CuaHangNoiThat.Models;
 
 public sealed class VoucherDto
 {
+    [JsonIgnore]
+    public string SelectionLabel => $"{IdVoucher} · Giảm {PhanTram:0.##}%";
+
     [JsonPropertyName("id_voucher")]
     public string IdVoucher { get; set; } = string.Empty;
 
@@ -15,4 +18,7 @@ public sealed class VoucherDto
 
     [JsonPropertyName("soluong")]
     public int? SoLuong { get; set; }
+
+    [JsonPropertyName("chuongtrinhkhuyenmai")]
+    public PromotionDto? Promotion { get; set; }
 }

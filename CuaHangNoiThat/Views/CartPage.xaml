@@ -9,74 +9,73 @@
              Title="Giỏ hàng"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource PageBackground}">
-    <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="16,14,16,20" Spacing="16">
-                <Grid ColumnDefinitions="*,Auto">
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="MOKHA LIVING" Style="{StaticResource Eyebrow}"/>
-                        <Label Text="{Binding Items.Count, StringFormat='Giỏ hàng của bạn ({0})'}" FontSize="23" FontFamily="OpenSansSemibold"/>
-                    </VerticalStackLayout>
-                    <Label Grid.Column="1" Text="🛍" FontSize="24" VerticalTextAlignment="Center"/>
-                </Grid>
-                <Border BackgroundColor="#FFF5DC" Stroke="#E8C778" StrokeShape="RoundRectangle 12" Padding="12">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                        <Label Text="✦" TextColor="{StaticResource Accent}" FontSize="18"/>
-                        <Label Grid.Column="1" Text="Đơn từ 500.000 đ được miễn phí giao &amp; lắp đặt." TextColor="#8A5E20" FontSize="11" VerticalTextAlignment="Center"/>
-                    </Grid>
-                </Border>
+    <ScrollView>
+            <VerticalStackLayout Padding="20,18,20,24" Spacing="18">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="MOKHA LIVING" Style="{StaticResource Eyebrow}" />
+                    <Label Text="{Binding Items.Count, StringFormat='Giỏ hàng ({0})'}" Style="{StaticResource PageTitle}" />
+                </VerticalStackLayout>
+
                 <CollectionView ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}" SelectionMode="None">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:CartItemModel">
-                            <Border Style="{StaticResource Card}" Padding="10" Margin="0,0,0,10">
-                                <Grid ColumnDefinitions="72,*,Auto" ColumnSpacing="10">
-                                    <Border HeightRequest="84" BackgroundColor="{StaticResource Secondary}" StrokeThickness="0" StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                            <Border Style="{StaticResource Card}" Padding="12" Margin="0,0,0,10">
+                                <Grid ColumnDefinitions="84,*" ColumnSpacing="12">
+                                    <Border HeightRequest="96"
+                                            BackgroundColor="{StaticResource Secondary}"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 12"
+                                            VerticalOptions="Start">
                                         <Grid>
-                                            <Label Text="▧" FontSize="36" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/>
-                                            <Image Source="{Binding ImageName}" Aspect="AspectFill"/>
+                                            <Label Text="▧" FontSize="36" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" AutomationProperties.IsInAccessibleTree="False" />
+                                            <Image Source="{Binding ImageName}" Aspect="AspectFill" SemanticProperties.Description="{Binding ProductName, StringFormat='Ảnh {0}'}" />
                                         </Grid>
                                     </Border>
-                                    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                                        <Label Text="{Binding ProductName}" FontSize="13" FontFamily="OpenSansSemibold" MaxLines="2"/>
-                                        <Label Text="{Binding UnitPriceFormatted}" FontSize="12" TextColor="{StaticResource Primary}"/>
-                                        <Label Text="{Binding TotalPriceFormatted}" FontSize="11" TextColor="{StaticResource TextSecondary}"/>
-                                    </VerticalStackLayout>
-                                    <VerticalStackLayout Grid.Column="2" Spacing="5" VerticalOptions="Center">
-                                        <HorizontalStackLayout Spacing="0">
-                                            <Button Text="−" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.DecreaseQuantityCommand}" CommandParameter="{Binding}" BackgroundColor="{StaticResource SurfaceMuted}" TextColor="{StaticResource TextPrimary}" CornerRadius="7" WidthRequest="40" HeightRequest="40" Padding="0"/>
-                                            <Label Text="{Binding Quantity}" WidthRequest="28" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontFamily="OpenSansSemibold"/>
-                                            <Button Text="+" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.IncreaseQuantityCommand}" CommandParameter="{Binding}" BackgroundColor="{StaticResource SurfaceMuted}" TextColor="{StaticResource TextPrimary}" CornerRadius="7" WidthRequest="40" HeightRequest="40" Padding="0"/>
-                                        </HorizontalStackLayout>
-                                        <Button Text="Xóa" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.RemoveCartItemCommand}" CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" FontSize="10" HeightRequest="40" Padding="0"/>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="6">
+                                        <Label Text="{Binding ProductName}" Style="{StaticResource CardTitle}" MaxLines="2" />
+                                        <Label Text="{Binding UnitPriceFormatted}" Style="{StaticResource Caption}" />
+                                        <Label Text="{Binding TotalPriceFormatted}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="{StaticResource Primary}" />
+                                        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="6" Margin="0,2,0,0">
+                                            <Button Text="−" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.DecreaseQuantityCommand}" CommandParameter="{Binding .}" BackgroundColor="{StaticResource SurfaceMuted}" TextColor="{StaticResource TextPrimary}" CornerRadius="10" WidthRequest="44" HeightRequest="44" Padding="0" FontSize="18" SemanticProperties.Description="Giảm số lượng" />
+                                            <Label Grid.Column="1" Text="{Binding Quantity}" WidthRequest="28" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontFamily="OpenSansSemibold" />
+                                            <Button Grid.Column="2" Text="+" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.IncreaseQuantityCommand}" CommandParameter="{Binding .}" IsEnabled="{Binding CanIncreaseQuantity}" BackgroundColor="{StaticResource SurfaceMuted}" TextColor="{StaticResource TextPrimary}" CornerRadius="10" WidthRequest="44" HeightRequest="44" Padding="0" FontSize="18" SemanticProperties.Description="Tăng số lượng" />
+                                            <Button Grid.Column="4" Text="Xóa" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.RemoveCartItemCommand}" CommandParameter="{Binding .}" BackgroundColor="Transparent" TextColor="{StaticResource Danger}" FontFamily="OpenSansSemibold" FontSize="12" HeightRequest="44" Padding="8,0" />
+                                        </Grid>
                                     </VerticalStackLayout>
                                 </Grid>
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
-                <VerticalStackLayout IsVisible="{Binding IsEmpty}" HorizontalOptions="Center" Spacing="8" Padding="20,28,20,20">
-                    <Label Text="Giỏ hàng đang trống" Style="{StaticResource SectionTitle}" FontSize="19" HorizontalTextAlignment="Center"/>
-                    <Label Text="Thêm một thiết kế bạn yêu thích để bắt đầu." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/>
-                    <Button Text="KHÁM PHÁ SẢN PHẨM" Command="{Binding GoToCatalogCommand}" Style="{StaticResource PrimaryButton}" FontSize="11" Margin="0,6,0,0"/>
+
+                <VerticalStackLayout IsVisible="{Binding IsEmpty}" HorizontalOptions="Center" Spacing="10" Padding="20,36,20,28">
+                    <Label Text="Giỏ hàng đang trống" Style="{StaticResource SectionTitle}" HorizontalTextAlignment="Center" />
+                    <Label Text="Sản phẩm bạn thêm sẽ xuất hiện tại đây." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
+                    <Button Text="KHÁM PHÁ SẢN PHẨM" Command="{Binding GoToCatalogCommand}" Style="{StaticResource PrimaryButton}" Margin="0,6,0,0" />
                 </VerticalStackLayout>
-                <Border Style="{StaticResource Card}">
-                    <VerticalStackLayout Spacing="10">
-                        <Label Text="Tạm tính" Style="{StaticResource SectionTitle}" FontSize="16"/>
-                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
-                            <Label Text="Tiền hàng" Style="{StaticResource MutedLabel}"/>
-                            <Label Grid.Column="1" Text="{Binding Subtotal}" FontSize="12"/>
-                            <Label Grid.Row="1" Text="Giao &amp; lắp đặt" Style="{StaticResource MutedLabel}"/>
-                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding ShippingFee}" FontSize="12"/>
-                            <BoxView Grid.Row="2" Grid.ColumnSpan="2" HeightRequest="1" Color="#E9E1D9"/>
-                            <Label Grid.Row="2" Text="Tổng thanh toán" FontFamily="OpenSansSemibold"/>
-                            <Label Grid.Row="2" Grid.Column="1" Text="{Binding Total}" TextColor="{StaticResource Primary}" FontSize="16" FontFamily="OpenSansSemibold"/>
+
+                <Border IsVisible="{Binding HasItems}" Style="{StaticResource Card}" Padding="16">
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="Tóm tắt đơn hàng" Style="{StaticResource SectionTitle}" />
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                            <Label Text="Tiền hàng" Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
+                            <Label Grid.Column="1" Text="{Binding Subtotal}" Style="{StaticResource BodyText}" />
+                            <Label Grid.Row="1" Text="Giao hàng" Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
+                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding ShippingFee}" Style="{StaticResource BodyText}" />
+                            <BoxView Grid.Row="2" Grid.ColumnSpan="2" HeightRequest="1" Color="{StaticResource BorderSubtle}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Tổng thanh toán" FontFamily="OpenSansSemibold" FontSize="15" />
+                            <Label Grid.Column="1" Text="{Binding Total}" FontFamily="OpenSansSemibold" FontSize="17" TextColor="{StaticResource Primary}" />
                         </Grid>
                     </VerticalStackLayout>
                 </Border>
+                <Button Text="TIẾN HÀNH THANH TOÁN  →"
+                        Command="{Binding CheckoutCommand}"
+                        IsEnabled="{Binding HasItems}"
+                        Style="{StaticResource PrimaryButton}"
+                        HeightRequest="52"
+                        Margin="0,2,0,0" />
             </VerticalStackLayout>
-        </ScrollView>
-        <Border Grid.Row="1" BackgroundColor="{StaticResource Surface}" StrokeThickness="0" Padding="16,10">
-            <Button Text="TIẾN HÀNH THANH TOÁN  →" Command="{Binding CheckoutCommand}" IsEnabled="{Binding HasItems}" Style="{StaticResource PrimaryButton}" HeightRequest="52"/>
-        </Border>
-    </Grid>
+    </ScrollView>
 </ContentPage>

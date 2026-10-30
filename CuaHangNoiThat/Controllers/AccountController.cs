@@ -134,6 +134,15 @@ public partial class AccountController : ObservableObject
     [RelayCommand]
     private Task OpenOrdersAsync() => Shell.Current.GoToAsync("OrdersPage");
 
+    [RelayCommand]
+    private Task OpenAddressesAsync() => Shell.Current.GoToAsync("AddressPage");
+
+    [RelayCommand]
+    private Task OpenProfileAsync() => Shell.Current.GoToAsync("ProfilePage");
+
+    [RelayCommand]
+    private Task OpenCartAsync() => Shell.Current.GoToAsync("//CartPage");
+
     partial void OnUserChanged(AuthenticatedUser? value)
     {
         OnPropertyChanged(nameof(IsSignedIn));

@@ -7,37 +7,79 @@
              x:DataType="controllers:AddressController"
              x:Name="PageRoot"
              Title="Địa chỉ giao hàng"
-             BackgroundColor="#FAFAF9">
-    <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="12,12,12,18" Spacing="12">
-                <Label Text="Địa chỉ của tôi" FontSize="16" FontAttributes="Bold" TextColor="#241A15"/>
-                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="#A34D16"/>
+             BackgroundColor="{StaticResource PageBackground}">
+    <ScrollView>
+            <VerticalStackLayout Padding="20,18,20,24" Spacing="16">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="TÀI KHOẢN" Style="{StaticResource Eyebrow}" />
+                    <Label Text="Quản lý nơi nhận đơn hàng của bạn." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
+                </VerticalStackLayout>
+                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="{StaticResource Primary}" />
 
-                <VerticalStackLayout IsVisible="{Binding HasAddresses}" BindableLayout.ItemsSource="{Binding Addresses}" Spacing="4">
+                <VerticalStackLayout IsVisible="{Binding HasAddresses}" BindableLayout.ItemsSource="{Binding Addresses}" Spacing="10">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="models:AddressDto">
-                            <Border BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 12" Padding="12" Margin="0,4">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0" Text="{Binding DiChi}" FontSize="12" TextColor="#5A514A" VerticalOptions="Center" LineBreakMode="WordWrap"/>
-                                    <Button Grid.Column="1" Text="Xóa" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.DeleteAddressCommand}" CommandParameter="{Binding}" BackgroundColor="Transparent" TextColor="#A34D16" FontSize="10" HeightRequest="44"/>
+                            <Border Style="{StaticResource Card}" Padding="14">
+                                <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+                                    <VerticalStackLayout Grid.ColumnSpan="3" Spacing="5" VerticalOptions="Center">
+                                        <Label IsVisible="{Binding IsDefault}" Text="ĐỊA CHỈ MẶC ĐỊNH" Style="{StaticResource Eyebrow}" FontSize="10" CharacterSpacing="0.6" />
+                                        <Label Text="{Binding DisplayAddress}" Style="{StaticResource BodyText}" LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
+                                    <Button Grid.Row="1" Grid.Column="1"
+                                            IsVisible="{Binding CanSetDefault}"
+                                            Text="Đặt mặc định"
+                                            Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SetDefaultCommand}"
+                                            CommandParameter="{Binding .}"
+                                            Style="{StaticResource SecondaryButton}"
+                                            FontSize="11"
+                                            HeightRequest="44"
+                                            HorizontalOptions="End"
+                                            Padding="8,0" />
+                                    <Button Grid.Row="1" Grid.Column="2"
+                                            Text="Xóa"
+                                            Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.DeleteAddressCommand}"
+                                            CommandParameter="{Binding .}"
+                                            BackgroundColor="Transparent"
+                                            TextColor="{StaticResource Danger}"
+                                            FontFamily="OpenSansSemibold"
+                                            FontSize="12"
+                                            HeightRequest="44"
+                                            HorizontalOptions="End"
+                                            Padding="8,0" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
                     </BindableLayout.ItemTemplate>
                 </VerticalStackLayout>
 
-                <Label Text="Bạn chưa có địa chỉ nào." IsVisible="{Binding HasNoAddresses}" FontSize="12" TextColor="#8A8580" HorizontalOptions="Center"/>
+                <Border IsVisible="{Binding HasNoAddresses}" Style="{StaticResource Card}" Padding="20">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Bạn chưa có địa chỉ nào" Style="{StaticResource SectionTitle}" HorizontalTextAlignment="Center" />
+                        <Label Text="Thêm địa chỉ bên dưới để sử dụng khi đặt hàng." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+                <Label Text="{Binding Message}" Style="{StaticResource BodyText}" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" />
+                <Border BackgroundColor="{StaticResource Surface}" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 16" Padding="16" Margin="0,4,0,0">
+            <VerticalStackLayout Spacing="9">
+                <Label Text="Thêm địa chỉ mới" Style="{StaticResource SectionTitle}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Border Style="{StaticResource FieldSurface}">
+                        <Entry Placeholder="Mã tỉnh/thành" Text="{Binding ProvinceCode}" Keyboard="Numeric" ReturnType="Next" />
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource FieldSurface}">
+                        <Entry Placeholder="Mã phường/xã" Text="{Binding WardCode}" Keyboard="Numeric" ReturnType="Next" />
+                    </Border>
+                </Grid>
+                <Border Style="{StaticResource FieldSurface}">
+                    <Entry Placeholder="Số nhà, tên đường" Text="{Binding Street}" ReturnType="Done" />
+                </Border>
+                <HorizontalStackLayout Spacing="8">
+                    <CheckBox IsChecked="{Binding MakeDefault}" Color="{StaticResource Primary}" />
+                    <Label Text="Đặt làm địa chỉ mặc định" Style="{StaticResource BodyText}" VerticalTextAlignment="Center" />
+                </HorizontalStackLayout>
+                <Button Text="Lưu địa chỉ" Command="{Binding AddAddressCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource PrimaryButton}" />
             </VerticalStackLayout>
-        </ScrollView>
-
-        <Border Grid.Row="1" BackgroundColor="White" Stroke="#ECE8E3" StrokeShape="RoundRectangle 16" StrokeThickness="0" Padding="12" Margin="0,8,0,0">
-            <VerticalStackLayout Spacing="8">
-                <Label Text="Thêm địa chỉ mới" FontSize="14" FontAttributes="Bold" TextColor="#241A15"/>
-                <Entry Placeholder="Nhập địa chỉ chi tiết" Text="{Binding NewAddress}" FontSize="11" HeightRequest="44"/>
-                <Button Text="Lưu địa chỉ" Command="{Binding AddAddressCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="#191817" TextColor="White" CornerRadius="7" HeightRequest="44" FontSize="11" FontAttributes="Bold"/>
-                <Label Text="{Binding Message}" TextColor="#A34D16" FontSize="10" HorizontalTextAlignment="Center"/>
+                </Border>
             </VerticalStackLayout>
-        </Border>
-    </Grid>
+    </ScrollView>
 </ContentPage>

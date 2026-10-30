@@ -14,6 +14,12 @@ public partial class CartItemModel : ObservableObject
     [JsonPropertyName("soluong")]
     public int Quantity { get; set; }
 
+    [JsonIgnore]
+    public int StockAvailable { get; set; }
+
+    [JsonIgnore]
+    public bool CanIncreaseQuantity => Quantity < StockAvailable;
+
     [JsonPropertyName("dongia")]
     public decimal UnitPrice { get; set; }
 
@@ -27,9 +33,10 @@ public partial class CartItemModel : ObservableObject
 
     public void SetQuantity(int quantity)
     {
-        Quantity = Math.Max(1, quantity);
+        Quantity = Math.Clamp(quantity, 1, Math.Max(1, StockAvailable));
         OnPropertyChanged(nameof(Quantity));
         OnPropertyChanged(nameof(TotalPrice));
         OnPropertyChanged(nameof(TotalPriceFormatted));
+        OnPropertyChanged(nameof(CanIncreaseQuantity));
     }
 }

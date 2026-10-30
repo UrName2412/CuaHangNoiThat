@@ -4,8 +4,8 @@ namespace CuaHangNoiThat.Models;
 
 public sealed class OrderCreateDto
 {
-    [JsonPropertyName("diachigiaohang")]
-    public string DiaChiGiaoHang { get; set; } = string.Empty;
+    [JsonPropertyName("id_diachigiaohang")]
+    public int IdDiaChiGiaoHang { get; set; }
 
     [JsonPropertyName("tongtien")]
     public decimal TongTien { get; set; }

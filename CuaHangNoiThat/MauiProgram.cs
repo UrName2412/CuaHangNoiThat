@@ -29,7 +29,9 @@ namespace CuaHangNoiThat
             builder.Services.AddSingleton<Controllers.CartController>();
             builder.Services.AddSingleton<Controllers.OrdersController>();
             builder.Services.AddSingleton<Controllers.AccountController>();
+            builder.Services.AddSingleton<Controllers.ProfileController>();
             builder.Services.AddSingleton<Controllers.CheckoutController>();
+            builder.Services.AddSingleton<MockBankService>();
             builder.Services.AddSingleton<Controllers.AddressController>();
             builder.Services.AddSingleton<Controllers.PromotionController>();
             builder.Services.AddTransient<Controllers.ProductDetailController>();

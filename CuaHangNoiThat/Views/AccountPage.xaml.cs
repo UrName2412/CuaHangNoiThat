@@ -45,10 +45,10 @@ public partial class AccountPage : ContentPage
         try
         {
             isAnimatingModeSwitch = true;
-            await AuthFormContent.FadeTo(0.75, 80, Easing.CubicIn);
-            await AuthFormContent.TranslateTo(0, 2, 0);
-            await AuthFormContent.FadeTo(1, 140, Easing.CubicOut);
-            await AuthFormContent.TranslateTo(0, 0, 120, Easing.CubicOut);
+            await AuthFormContent.FadeToAsync(0.75, 80, Easing.CubicIn);
+            await AuthFormContent.TranslateToAsync(0, 2, 0);
+            await AuthFormContent.FadeToAsync(1, 140, Easing.CubicOut);
+            await AuthFormContent.TranslateToAsync(0, 0, 120, Easing.CubicOut);
         }
         finally
         {

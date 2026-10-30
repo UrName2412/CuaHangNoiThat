@@ -17,7 +17,7 @@ public partial class OrdersController : ObservableObject
     private string errorMessage = string.Empty;
 
     public bool IsNotBusy => !IsBusy;
-    public bool IsEmpty => !IsBusy && Orders.Count == 0;
+    public bool IsEmpty => !IsBusy && Orders.Count == 0 && !HasError;
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
     public OrdersController(SupabaseService supabase) => this.supabase = supabase;

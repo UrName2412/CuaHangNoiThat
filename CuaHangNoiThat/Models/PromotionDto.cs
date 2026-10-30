@@ -18,4 +18,7 @@ public sealed class PromotionDto
 
     [JsonPropertyName("ghichu")]
     public string? GhiChu { get; set; }
+
+    [JsonPropertyName("trangthai")]
+    public int TrangThai { get; set; }
 }

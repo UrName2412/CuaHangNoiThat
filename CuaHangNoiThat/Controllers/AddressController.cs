@@ -14,7 +14,16 @@ public partial class AddressController : ObservableObject
     private ObservableCollection<AddressDto> addresses = new();
 
     [ObservableProperty]
-    private string newAddress = string.Empty;
+    private string provinceCode = string.Empty;
+
+    [ObservableProperty]
+    private string wardCode = string.Empty;
+
+    [ObservableProperty]
+    private string street = string.Empty;
+
+    [ObservableProperty]
+    private bool makeDefault;
 
     [ObservableProperty]
     private string message = string.Empty;
@@ -40,10 +49,7 @@ public partial class AddressController : ObservableObject
         {
             IsBusy = true;
             Message = string.Empty;
-            var addresses = await supabase.GetAddressesAsync();
-            Addresses = new ObservableCollection<AddressDto>(addresses);
-            OnPropertyChanged(nameof(HasAddresses));
-            OnPropertyChanged(nameof(HasNoAddresses));
+            await RefreshAddressesAsync();
         }
         catch (Exception ex)
         {
@@ -56,15 +62,24 @@ public partial class AddressController : ObservableObject
         }
     }
 
+    private async Task RefreshAddressesAsync()
+    {
+        var addresses = await supabase.GetAddressesAsync();
+        Addresses = new ObservableCollection<AddressDto>(addresses);
+        OnPropertyChanged(nameof(HasAddresses));
+        OnPropertyChanged(nameof(HasNoAddresses));
+    }
+
     [RelayCommand]
     private async Task AddAddressAsync()
     {
         if (IsBusy)
             return;
 
-        if (string.IsNullOrWhiteSpace(NewAddress))
+        if (!int.TryParse(ProvinceCode, out var province) || province <= 0 ||
+            !int.TryParse(WardCode, out var ward) || ward <= 0 || string.IsNullOrWhiteSpace(Street))
         {
-            Message = "Vui lòng nhập địa chỉ.";
+            Message = "Vui lòng nhập mã tỉnh/thành, mã phường/xã và số nhà, tên đường.";
             return;
         }
 
@@ -72,9 +87,11 @@ public partial class AddressController : ObservableObject
         {
             IsBusy = true;
             Message = string.Empty;
-            await supabase.AddAddressAsync(NewAddress.Trim());
-            NewAddress = string.Empty;
-            await LoadAddressesAsync();
+            await supabase.AddAddressAsync(province, ward, Street.Trim(), MakeDefault || !HasAddresses);
+            ProvinceCode = string.Empty;
+            WardCode = string.Empty;
+            Street = string.Empty;
+            await RefreshAddressesAsync();
             Message = "Địa chỉ đã được thêm.";
         }
         catch (Exception ex)
@@ -98,8 +115,8 @@ public partial class AddressController : ObservableObject
         {
             IsBusy = true;
             Message = string.Empty;
-            await supabase.DeleteAddressAsync(address.DiChi);
-            await LoadAddressesAsync();
+            await supabase.DeleteAddressAsync(address.IdDiaChi);
+            await RefreshAddressesAsync();
             Message = "Địa chỉ đã bị xóa.";
         }
         catch (Exception ex)
@@ -111,6 +128,21 @@ public partial class AddressController : ObservableObject
             IsBusy = false;
             OnPropertyChanged(nameof(IsNotBusy));
         }
+    }
+
+    [RelayCommand]
+    private async Task SetDefaultAsync(AddressDto address)
+    {
+        if (address is null || address.IsDefault || IsBusy) return;
+        try
+        {
+            IsBusy = true;
+            await supabase.SetDefaultAddressAsync(address.IdDiaChi);
+            await RefreshAddressesAsync();
+            Message = "Đã cập nhật địa chỉ mặc định.";
+        }
+        catch (Exception exception) { Message = exception.Message; }
+        finally { IsBusy = false; OnPropertyChanged(nameof(IsNotBusy)); }
     }
 
     partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(IsNotBusy));

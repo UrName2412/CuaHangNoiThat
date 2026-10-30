@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="CuaHangNoiThat/CuaHangNoiThat.csproj" />
+  <Project Path="MockBank.Api/MockBank.Api.csproj" />
+  <Project Path="CuaHangNoiThat/CuaHangNoiThat.csproj">
+    <Deploy Solution="Debug|*" />
+  </Project>
 </Solution>

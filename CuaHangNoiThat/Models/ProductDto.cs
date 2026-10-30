@@ -27,4 +27,16 @@ public sealed class ProductDto
 
     [JsonPropertyName("mota")]
     public string? MoTa { get; set; }
+
+    [JsonPropertyName("kmtheosanpham")]
+    public List<ProductCampaignDto> Promotions { get; set; } = [];
+}
+
+public sealed class ProductCampaignDto
+{
+    [JsonPropertyName("phantram")]
+    public decimal? PhanTram { get; set; }
+
+    [JsonPropertyName("chuongtrinhkhuyenmai")]
+    public PromotionDto? Promotion { get; set; }
 }
