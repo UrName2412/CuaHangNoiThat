@@ -6,44 +6,111 @@
              x:DataType="controllers:AccountController"
              Title="Tài khoản"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{StaticResource PageBackground}">
+             BackgroundColor="#FAF9F6">
     <Grid RowDefinitions="*">
         <ScrollView>
             <VerticalStackLayout Padding="16,18,16,28" Spacing="16">
-                <Label Text="Tài khoản của bạn" Style="{StaticResource SectionTitle}" FontSize="24"/>
+                <VerticalStackLayout IsVisible="{Binding IsSignedOut}" Spacing="6">
+                    <Label Text="Chào mừng trở lại!" Style="{StaticResource SectionTitle}" FontSize="26">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsRegisterMode}" Value="True">
+                                <Setter Property="Text" Value="Tạo tài khoản mới" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <Label Text="Đăng nhập để theo dõi đơn hàng và lưu thông tin mua sắm." TextColor="#737373" FontSize="13">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsRegisterMode}" Value="True">
+                                <Setter Property="Text" Value="Tạo tài khoản để nhận ưu đãi và thanh toán nhanh hơn." />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                </VerticalStackLayout>
 
-                <Border IsVisible="{Binding IsSignedIn}" BackgroundColor="{StaticResource Tertiary}" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="18">
+                <Label IsVisible="{Binding IsSignedIn}" Text="Tài khoản của bạn" Style="{StaticResource SectionTitle}" FontSize="24"/>
+
+                <Border IsVisible="{Binding IsSignedIn}" BackgroundColor="#171717" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="18">
                     <VerticalStackLayout Spacing="8">
                         <Label Text="ĐÃ ĐĂNG NHẬP" TextColor="#F7BF35" FontSize="10" FontAttributes="Bold"/>
                         <Label Text="{Binding User.FullName}" TextColor="White" FontSize="20" FontAttributes="Bold"/>
-                        <Label Text="{Binding User.Email}" TextColor="#D7D1CC" FontSize="12"/>
-                        <Button Text="Xem đơn hàng của tôi" Command="{Binding OpenOrdersCommand}" BackgroundColor="{StaticResource Accent}" TextColor="{StaticResource TextPrimary}" CornerRadius="10" HeightRequest="48" Margin="0,4,0,0"/>
-                        <Button Text="Đăng xuất" Command="{Binding LogoutCommand}" BackgroundColor="Transparent" TextColor="White" BorderColor="#8B8179" BorderWidth="1" CornerRadius="10" HeightRequest="44"/>
+                        <Label Text="{Binding User.Email}" TextColor="#D6D3D1" FontSize="12"/>
+                        <Button Text="Xem đơn hàng của tôi" Command="{Binding OpenOrdersCommand}" BackgroundColor="#FAF9F6" TextColor="#171717" CornerRadius="10" HeightRequest="48" Margin="0,4,0,0"/>
+                        <Button Text="Đăng xuất" Command="{Binding LogoutCommand}" BackgroundColor="Transparent" TextColor="White" BorderColor="#666666" BorderWidth="1" CornerRadius="10" HeightRequest="44"/>
                     </VerticalStackLayout>
                 </Border>
 
-                <Border IsVisible="{Binding IsSignedOut}" Style="{StaticResource Card}" Padding="16">
-                    <VerticalStackLayout Spacing="10">
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                            <Button Text="Đăng nhập" Command="{Binding ShowLoginCommand}" BackgroundColor="#F1F1F0" TextColor="#241A15" CornerRadius="8"/>
-                            <Button Grid.Column="1" Text="Đăng ký" Command="{Binding ShowRegisterCommand}" BackgroundColor="#F1F1F0" TextColor="#241A15" CornerRadius="8"/>
+                <Border IsVisible="{Binding IsSignedOut}" BackgroundColor="#FFFFFF" Stroke="#E8E5DF" StrokeShape="RoundRectangle 20" Padding="16">
+                    <VerticalStackLayout x:Name="AuthFormContent" Spacing="14">
+                        <Border BackgroundColor="#F5F4F1" Stroke="#E8E5DF" StrokeShape="RoundRectangle 12" Padding="4">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                <Button Text="Đăng nhập" Command="{Binding ShowLoginCommand}" BackgroundColor="Transparent" TextColor="#737373" CornerRadius="10" HeightRequest="44" BorderWidth="0">
+                                    <Button.Triggers>
+                                        <DataTrigger TargetType="Button" Binding="{Binding IsLoginMode}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="#171717" />
+                                            <Setter Property="TextColor" Value="White" />
+                                        </DataTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                                <Button Grid.Column="1" Text="Đăng ký" Command="{Binding ShowRegisterCommand}" BackgroundColor="Transparent" TextColor="#737373" CornerRadius="10" HeightRequest="44" BorderWidth="0">
+                                    <Button.Triggers>
+                                        <DataTrigger TargetType="Button" Binding="{Binding IsRegisterMode}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="#171717" />
+                                            <Setter Property="TextColor" Value="White" />
+                                        </DataTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <VerticalStackLayout IsVisible="{Binding IsRegisterMode}" Spacing="6">
+                            <Label Text="Họ và tên" TextColor="#171717" FontSize="13" FontAttributes="Bold" />
+                            <Border BackgroundColor="#F5F4F1" Stroke="#E8E5DF" StrokeShape="RoundRectangle 12" Padding="12,0">
+                                <Entry Placeholder="Nhập họ và tên" Text="{Binding FullName}" TextColor="#171717" PlaceholderColor="#A3A3A3" BackgroundColor="Transparent" HeightRequest="50" ReturnType="Next"/>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Email hoặc tên đăng nhập" TextColor="#171717" FontSize="13" FontAttributes="Bold" />
+                            <Border BackgroundColor="#F5F4F1" Stroke="#E8E5DF" StrokeShape="RoundRectangle 12" Padding="12,0">
+                                <Entry Placeholder="Nhập email hoặc tên đăng nhập" Text="{Binding UsernameOrEmail}" TextColor="#171717" PlaceholderColor="#A3A3A3" BackgroundColor="Transparent" HeightRequest="50" Keyboard="Email" ReturnType="Next"/>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Mật khẩu" TextColor="#171717" FontSize="13" FontAttributes="Bold" />
+                            <Border BackgroundColor="#F5F4F1" Stroke="#E8E5DF" StrokeShape="RoundRectangle 12" Padding="10,0,6,0">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <Entry Placeholder="Nhập mật khẩu" Text="{Binding Password}" TextColor="#171717" PlaceholderColor="#A3A3A3" BackgroundColor="Transparent" HeightRequest="50" IsPassword="{Binding IsPasswordHidden}" ReturnType="Go"/>
+                                    <Button Grid.Column="1" Text="{Binding PasswordVisibilityText}" Command="{Binding TogglePasswordVisibilityCommand}" BackgroundColor="Transparent" TextColor="#737373" FontSize="12" Padding="8,0" />
+                                </Grid>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <Grid IsVisible="{Binding IsRegisterMode}">
+                            <Button Text="Tạo tài khoản" Command="{Binding RegisterCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="#171717" TextColor="White" CornerRadius="12" HeightRequest="50">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
+                                        <Setter Property="Text" Value="Đang tạo tài khoản..." />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="White" HorizontalOptions="End" VerticalOptions="Center" Margin="0,0,16,0"/>
                         </Grid>
-                        <Border IsVisible="{Binding IsRegisterMode}" BackgroundColor="#F5F3F0" Stroke="#E7E1DA" StrokeShape="RoundRectangle 9" Padding="12,0">
-                            <Entry Placeholder="Họ và tên" Text="{Binding FullName}" TextColor="#241A15" PlaceholderColor="#8A8580" BackgroundColor="Transparent" HeightRequest="48"/>
-                        </Border>
-                        <Border BackgroundColor="#F5F3F0" Stroke="#E7E1DA" StrokeShape="RoundRectangle 9" Padding="12,0">
-                            <Entry Placeholder="Tên đăng nhập hoặc email" Text="{Binding UsernameOrEmail}" TextColor="#241A15" PlaceholderColor="#8A8580" BackgroundColor="Transparent" HeightRequest="48"/>
-                        </Border>
-                        <Border BackgroundColor="#F5F3F0" Stroke="#E7E1DA" StrokeShape="RoundRectangle 9" Padding="12,0">
-                            <Entry Placeholder="Mật khẩu" Text="{Binding Password}" TextColor="#241A15" PlaceholderColor="#8A8580" BackgroundColor="Transparent" IsPassword="True" HeightRequest="48"/>
-                        </Border>
-                        <Button IsVisible="{Binding IsRegisterMode}" Text="Tạo tài khoản" Command="{Binding RegisterCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="#191817" TextColor="White" CornerRadius="9" HeightRequest="44"/>
-                        <Button IsVisible="{Binding IsLoginMode}" Text="Đăng nhập" Command="{Binding LoginCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="#191817" TextColor="White" CornerRadius="9" HeightRequest="44"/>
+
+                        <Grid IsVisible="{Binding IsLoginMode}">
+                            <Button Text="Đăng nhập" Command="{Binding LoginCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="#171717" TextColor="White" CornerRadius="12" HeightRequest="50">
+                                <Button.Triggers>
+                                    <DataTrigger TargetType="Button" Binding="{Binding IsBusy}" Value="True">
+                                        <Setter Property="Text" Value="Đang đăng nhập..." />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="White" HorizontalOptions="End" VerticalOptions="Center" Margin="0,0,16,0"/>
+                        </Grid>
+
+                        <Label IsVisible="{Binding HasMessage}" Text="{Binding Message}" TextColor="{Binding MessageColor}" FontSize="12" HorizontalTextAlignment="Center"/>
                     </VerticalStackLayout>
                 </Border>
-
-                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="#A34D16"/>
-                <Label Text="{Binding Message}" TextColor="#A34D16" FontSize="12" HorizontalTextAlignment="Center"/>
             </VerticalStackLayout>
         </ScrollView>
     </Grid>

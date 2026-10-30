@@ -19,4 +19,9 @@ public partial class OrdersPage : ContentPage
         base.OnAppearing();
         await controller.LoadAsync();
     }
+
+    private async void OnBackClicked(object? sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync("..");
+    }
 }

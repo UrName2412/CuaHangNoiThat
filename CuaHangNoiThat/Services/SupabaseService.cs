@@ -104,7 +104,7 @@ public sealed class SupabaseService
         {
             tendangnhap = normalizedEmail,
             loaitaikhoan = "KHACHHANG",
-            matkhau = BCrypt.Net.BCrypt.HashPassword(password),
+            matkhau = HashPassword(password),
             id_khachhang = newId,
             trangthai = 1
         }, cancellationToken);
@@ -176,12 +176,91 @@ public sealed class SupabaseService
             if (string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(storedHash))
                 return false;
 
-            var parts = storedHash.Split('$');
+            // Hỗ trợ mật khẩu băm theo PBKDF2 (dạng pbkdf2-sha256$iterations$salt$hash)
+            // do DB admin seed sẵn (salt/hash mã hoá base64url, không padding).
+            if (storedHash.StartsWith("pbkdf2", StringComparison.OrdinalIgnoreCase))
+            {
+                var parts = storedHash.Split('$');
+                if (parts.Length != 4)
+                    return false;
+
+                if (!parts[0].Contains("sha256", StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                if (!int.TryParse(parts[1], out var iterations) || iterations <= 0)
+                    return false;
+
+                var salt = DecodeBase64Url(parts[2]);
+                var expectedHash = DecodeBase64Url(parts[3]);
+                if (salt is null || expectedHash is null || expectedHash.Length == 0)
+                    return false;
+
+                var derived = Rfc2898DeriveBytes.Pbkdf2(
+                    password,
+                    salt,
+                    iterations,
+                    HashAlgorithmName.SHA256,
+                    expectedHash.Length);
+
+                return CryptographicOperations.FixedTimeEquals(derived, expectedHash);
+            }
+
+            // Tài khoản đăng ký qua app dùng BCrypt.
             return BCrypt.Net.BCrypt.Verify(password, storedHash);
         }
         catch
         {
             return false;
+        }
+    }
+
+    private static string HashPassword(string password)
+    {
+        if (string.IsNullOrEmpty(password))
+            throw new InvalidOperationException("Mật khẩu không được để trống.");
+
+        const int iterations = 120_000;
+        var salt = RandomNumberGenerator.GetBytes(16);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(
+            password,
+            salt,
+            iterations,
+            HashAlgorithmName.SHA256,
+            32);
+
+        return $"pbkdf2-sha256${iterations}${EncodeBase64Url(salt)}${EncodeBase64Url(hash)}";
+    }
+
+    private static string EncodeBase64Url(byte[] value) =>
+        Convert.ToBase64String(value).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+    private static byte[]? DecodeBase64Url(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var padded = value.Replace('-', '+').Replace('_', '/');
+        switch (padded.Length % 4)
+        {
+            case 2:
+                padded += "==";
+                break;
+            case 3:
+                padded += "=";
+                break;
+            case 0:
+                break;
+            default:
+                return null;
+        }
+
+        try
+        {
+            return Convert.FromBase64String(padded);
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -200,7 +279,7 @@ public sealed class SupabaseService
             .GroupBy(x => x.IdKieudang!.Value)
             .ToDictionary(x => x.Key, x => x.First().Tenkieudang ?? string.Empty);
 
-        return products.Select(p => MapProduct(p, woodMap, styleMap)).ToList();
+        return products.Select(p => MapProduct(p, woodMap, styleMap, config)).ToList();
     }
 
     public async Task<ProductDto?> GetProductByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -208,7 +287,7 @@ public sealed class SupabaseService
         var config = await configuration;
         var products = await FetchListAsync<ProductDto>(
             config,
-            $"/rest/v1/sanpham?select=*&id_sanpham=eq.{id}&limit=1",
+            $"/rest/v1/sanpham?select=*&id_sanpham=eq.{id}&trangthai=eq.1&limit=1",
             cancellationToken);
         return products.FirstOrDefault();
     }
@@ -230,13 +309,14 @@ public sealed class SupabaseService
             .GroupBy(x => x.IdKieudang!.Value)
             .ToDictionary(x => x.Key, x => x.First().Tenkieudang ?? string.Empty);
 
-        return MapProduct(product, woodMap, styleMap);
+        return MapProduct(product, woodMap, styleMap, config);
     }
 
     private static FurnitureItem MapProduct(
         ProductDto product,
         IReadOnlyDictionary<int, string> woodMap,
-        IReadOnlyDictionary<int, string> styleMap) =>
+        IReadOnlyDictionary<int, string> styleMap,
+        SupabaseConfiguration config) =>
         new()
         {
             IdSanPham = product.IdSanPham,
@@ -246,8 +326,28 @@ public sealed class SupabaseService
                 ?? "Nội thất",
             Description = product.MoTa ?? string.Empty,
             Price = product.DonGia.GetValueOrDefault(),
-            ImageName = product.HinhAnh,
+            ImageName = GetStorageImageUrl(config, product.HinhAnh),
         };
+
+    private static string? GetStorageImageUrl(SupabaseConfiguration config, string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return null;
+
+        var trimmedPath = imagePath.Trim();
+        if (Uri.TryCreate(trimmedPath, UriKind.Absolute, out var absoluteUri))
+            return absoluteUri.ToString();
+
+        const string bucketName = "NoiThatGo_hinhAnh";
+        var encodedPath = string.Join(
+            "/",
+            trimmedPath.TrimStart('/').Split('/').Select(Uri.EscapeDataString));
+        var baseUrl = config.Url.TrimEnd('/');
+        if (baseUrl.EndsWith("/rest/v1", StringComparison.OrdinalIgnoreCase))
+            baseUrl = baseUrl[..^"/rest/v1".Length];
+
+        return $"{baseUrl}/storage/v1/object/public/{Uri.EscapeDataString(bucketName)}/{encodedPath}";
+    }
 
     public async Task<IReadOnlyList<AddressDto>> GetAddressesAsync(CancellationToken cancellationToken = default)
     {
@@ -398,7 +498,7 @@ public sealed class SupabaseService
 
     private async Task<IReadOnlyList<ProductDto>> FetchProductsAsync(SupabaseConfiguration config, CancellationToken cancellationToken)
     {
-        using var request = CreateRequest(config, HttpMethod.Get, "/rest/v1/sanpham?select=*&isdeleted=eq.0&trangthai=eq.1&order=id_sanpham");
+        using var request = CreateRequest(config, HttpMethod.Get, "/rest/v1/sanpham?select=*&trangthai=eq.1&order=id_sanpham");
         using var response = await httpClient.SendAsync(request, cancellationToken);
         await EnsureSuccessAsync(response);
         return await response.Content.ReadFromJsonAsync<IReadOnlyList<ProductDto>>(JsonOptions, cancellationToken) ?? [];

@@ -17,10 +17,33 @@ public partial class AccountController : ObservableObject
     [ObservableProperty] private AuthenticatedUser? user;
     [ObservableProperty] private string message = string.Empty;
 
+    private bool isPasswordHidden = true;
+    private string passwordVisibilityText = "Hiện";
+    private string messageColor = "#DC2626";
+
     public bool IsSignedIn => User is not null;
     public bool IsSignedOut => !IsSignedIn;
     public bool IsLoginMode => !IsRegisterMode;
     public bool IsNotBusy => !IsBusy;
+    public bool HasMessage => !string.IsNullOrWhiteSpace(Message);
+
+    public bool IsPasswordHidden
+    {
+        get => isPasswordHidden;
+        set => SetProperty(ref isPasswordHidden, value);
+    }
+
+    public string PasswordVisibilityText
+    {
+        get => passwordVisibilityText;
+        set => SetProperty(ref passwordVisibilityText, value);
+    }
+
+    public string MessageColor
+    {
+        get => messageColor;
+        set => SetProperty(ref messageColor, value);
+    }
 
     public AccountController(SupabaseService supabase, CartController cart)
     {
@@ -36,12 +59,12 @@ public partial class AccountController : ObservableObject
         try
         {
             IsBusy = true;
-            Message = string.Empty;
+            ClearMessage();
             User = await supabase.RestoreSessionAsync();
         }
         catch (Exception exception)
         {
-            Message = $"Khôi phục phiên làm việc thất bại: {exception.Message}";
+            SetErrorMessage($"Khôi phục phiên làm việc thất bại: {exception.Message}");
             User = null;
         }
         finally
@@ -59,7 +82,7 @@ public partial class AccountController : ObservableObject
         await RunAsync(async () =>
         {
             User = await supabase.LoginAsync(UsernameOrEmail.Trim(), Password);
-            Message = "Đăng nhập thành công.";
+            SetSuccessMessage("Đăng nhập thành công.");
             Password = string.Empty;
         });
     }
@@ -67,16 +90,22 @@ public partial class AccountController : ObservableObject
     [RelayCommand]
     private async Task RegisterAsync()
     {
-        if (string.IsNullOrWhiteSpace(FullName) || !ValidateCredentials())
+        if (string.IsNullOrWhiteSpace(FullName))
+        {
+            SetErrorMessage("Vui lòng nhập họ và tên.");
+            return;
+        }
+
+        if (!ValidateCredentials())
             return;
 
         await RunAsync(async () =>
         {
             User = await supabase.RegisterAsync(UsernameOrEmail.Trim(), Password, FullName.Trim());
             Password = string.Empty;
-            Message = User is null
+            SetSuccessMessage(User is null
                 ? "Đăng ký thành công. Hãy kiểm tra email để xác nhận tài khoản."
-                : "Đăng ký và đăng nhập thành công.";
+                : "Đăng ký và đăng nhập thành công.");
         });
     }
 
@@ -92,7 +121,14 @@ public partial class AccountController : ObservableObject
         await supabase.SignOutAsync();
         cart.Clear();
         User = null;
-        Message = "Bạn đã đăng xuất.";
+        SetSuccessMessage("Bạn đã đăng xuất.");
+    }
+
+    [RelayCommand]
+    private void TogglePasswordVisibility()
+    {
+        IsPasswordHidden = !IsPasswordHidden;
+        PasswordVisibilityText = IsPasswordHidden ? "Hiện" : "Ẩn";
     }
 
     [RelayCommand]
@@ -108,17 +144,19 @@ public partial class AccountController : ObservableObject
 
     partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(IsNotBusy));
 
+    partial void OnMessageChanged(string value) => OnPropertyChanged(nameof(HasMessage));
+
     private bool ValidateCredentials()
     {
         if (string.IsNullOrWhiteSpace(UsernameOrEmail) || string.IsNullOrWhiteSpace(Password))
         {
-            Message = "Vui lòng nhập email và mật khẩu.";
+            SetErrorMessage("Vui lòng nhập email và mật khẩu.");
             return false;
         }
 
         if (Password.Trim().Length < 6)
         {
-            Message = "Mật khẩu phải có ít nhất 6 ký tự.";
+            SetErrorMessage("Mật khẩu phải có ít nhất 6 ký tự.");
             return false;
         }
 
@@ -129,35 +167,53 @@ public partial class AccountController : ObservableObject
     {
         if (IsBusy)
         {
-            Message = "Yêu cầu trước đang xử lý, vui lòng đợi.";
+            SetErrorMessage("Yêu cầu trước đang xử lý, vui lòng đợi.");
             return;
         }
 
         try
         {
             IsBusy = true;
-            Message = string.Empty;
+            ClearMessage();
             await action();
         }
         catch (OperationCanceledException)
         {
-            Message = "Kết nối quá thời gian chờ. Vui lòng thử lại.";
+            SetErrorMessage("Kết nối quá thời gian chờ. Vui lòng thử lại.");
         }
         catch (InvalidOperationException exception)
         {
-            Message = exception.Message;
+            SetErrorMessage(exception.Message);
         }
         catch (HttpRequestException exception)
         {
-            Message = exception.Message;
+            SetErrorMessage(exception.Message);
         }
         catch (Exception exception)
         {
-            Message = $"Lỗi: {exception.Message}";
+            SetErrorMessage($"Lỗi: {exception.Message}");
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    private void ClearMessage()
+    {
+        Message = string.Empty;
+        MessageColor = "#DC2626";
+    }
+
+    private void SetErrorMessage(string value)
+    {
+        Message = value;
+        MessageColor = "#DC2626";
+    }
+
+    private void SetSuccessMessage(string value)
+    {
+        Message = value;
+        MessageColor = "#16A34A";
     }
 }
