@@ -35,16 +35,11 @@ appsettings.*.json
 
 # ============== Android ==============
 android/
-# Include the Android application entry point and the local sandbox network policy.
+# Include the Android application entry points.
 !CuaHangNoiThat/Platforms/Android/
 CuaHangNoiThat/Platforms/Android/*
 !CuaHangNoiThat/Platforms/Android/MainApplication.cs
 !CuaHangNoiThat/Platforms/Android/MainActivity.cs
-!CuaHangNoiThat/Platforms/Android/Resources/
-CuaHangNoiThat/Platforms/Android/Resources/*
-!CuaHangNoiThat/Platforms/Android/Resources/xml/
-CuaHangNoiThat/Platforms/Android/Resources/xml/*
-!CuaHangNoiThat/Platforms/Android/Resources/xml/mock_bank_network_security.xml
 **/AndroidManifest.xml
 **/Styles/Values/
 **/libs/

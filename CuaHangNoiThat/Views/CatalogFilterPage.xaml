@@ -1,16 +1,46 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:CuaHangNoiThat.Models"
              xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
              x:Class="CuaHangNoiThat.Views.CatalogFilterPage"
              x:DataType="controllers:CatalogController"
              Title="Bộ lọc sản phẩm" BackgroundColor="{StaticResource PageBackground}">
     <ContentPage.ToolbarItems><ToolbarItem Text="Đóng" Command="{Binding CloseFiltersCommand}" /></ContentPage.ToolbarItems>
+    <Grid RowDefinitions="*,Auto">
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="18">
             <Label Text="Tìm sản phẩm phù hợp" Style="{StaticResource PageTitle}" />
-            <Label Text="Các điều kiện được kết hợp với từ khóa và danh mục đang chọn. Khoảng giá tính theo giá bán hiện tại sau giảm giá sản phẩm." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
+            <Label Text="Chọn loại sản phẩm, chất liệu gỗ và khoảng giá phù hợp. Các điều kiện được kết hợp với từ khóa và phong cách đang chọn." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
+            <Border Style="{StaticResource Card}" Padding="16">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Đặc điểm sản phẩm" Style="{StaticResource SectionTitle}" />
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Loại sản phẩm" Style="{StaticResource Caption}" />
+                        <Border Style="{StaticResource FieldSurface}">
+                            <Picker Title="Chọn loại sản phẩm"
+                                    ItemsSource="{Binding ProductTypeOptions}"
+                                    ItemDisplayBinding="{Binding Name, x:DataType=models:ProductFilterOption}"
+                                    SelectedItem="{Binding DraftProductType}"
+                                    IsEnabled="{Binding HasProductTypeOptions}"
+                                    SemanticProperties.Description="Lọc theo loại sản phẩm" />
+                        </Border>
+                        <Label IsVisible="{Binding HasNoProductTypeOptions}" Text="Chưa có thông tin loại sản phẩm để chọn." Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Loại gỗ" Style="{StaticResource Caption}" />
+                        <Border Style="{StaticResource FieldSurface}">
+                            <Picker Title="Chọn loại gỗ"
+                                    ItemsSource="{Binding WoodTypeOptions}"
+                                    ItemDisplayBinding="{Binding Name, x:DataType=models:ProductFilterOption}"
+                                    SelectedItem="{Binding DraftWoodType}"
+                                    SemanticProperties.Description="Lọc theo loại gỗ" />
+                        </Border>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
             <Label Text="Khoảng giá (VND)" Style="{StaticResource SectionTitle}" />
+            <Label Text="Tính theo giá bán hiện tại sau giảm giá sản phẩm." Style="{StaticResource Caption}" />
             <VerticalStackLayout Spacing="5">
                 <Label Text="Giá tối thiểu" Style="{StaticResource Caption}" />
                 <Border Style="{StaticResource FieldSurface}"><Entry Text="{Binding MinimumPriceInput}" Placeholder="Không giới hạn, VD: 5000000" Keyboard="Numeric" ReturnType="Next" /></Border>
@@ -29,9 +59,16 @@
             </Grid>
             <Label Text="Sắp xếp" Style="{StaticResource SectionTitle}" />
             <Border Style="{StaticResource FieldSurface}"><Picker Title="Chọn cách sắp xếp" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding DraftSortOrder}" /></Border>
-            <Label Text="{Binding FilterMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Danger}" />
-            <Button Text="Áp dụng bộ lọc" Style="{StaticResource PrimaryButton}" Command="{Binding ApplyFiltersCommand}" />
-            <Button Text="Đặt lại lựa chọn" Style="{StaticResource SecondaryButton}" Command="{Binding ResetFilterDraftCommand}" />
         </VerticalStackLayout>
     </ScrollView>
+    <Border Grid.Row="1" BackgroundColor="{StaticResource Surface}" Stroke="{StaticResource BorderSubtle}" Padding="20,12">
+        <VerticalStackLayout Spacing="8">
+            <Label Text="{Binding FilterMessage}" Style="{StaticResource Caption}" TextColor="{StaticResource Danger}" />
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Button Text="Đặt lại" Style="{StaticResource SecondaryButton}" Command="{Binding ResetFilterDraftCommand}" Padding="16,0" />
+                <Button Grid.Column="1" Text="Áp dụng bộ lọc" Style="{StaticResource PrimaryButton}" Command="{Binding ApplyFiltersCommand}" />
+            </Grid>
+        </VerticalStackLayout>
+    </Border>
+    </Grid>
 </ContentPage>

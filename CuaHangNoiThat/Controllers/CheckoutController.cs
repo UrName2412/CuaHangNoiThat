@@ -11,16 +11,46 @@ public partial class CheckoutController : ObservableObject
 {
     private readonly SupabaseService supabase;
     private readonly CartController cart;
-    private readonly MockBankService mockBank;
 
-#if DEBUG
-    public bool IsMockBankAvailable => true;
-#else
-    public bool IsMockBankAvailable => false;
-#endif
-    public IReadOnlyList<string> MockOutcomes { get; } = ["Thành công", "Thất bại", "Hủy", "Hết hạn"];
-    [ObservableProperty] private string selectedMockOutcome = "Thành công";
-    [ObservableProperty] private string mockPaymentMessage = string.Empty;
+    public ObservableCollection<CartItemModel> CheckoutItems { get; } = new();
+    public string SelectedAddressText => Addresses.FirstOrDefault(a => a.IdDiaChi == SelectedAddressId)?.DisplayAddress
+        ?? "Chưa chọn địa chỉ giao hàng";
+    public IReadOnlyList<string> PaymentMethods { get; } = ["Thanh toán khi nhận hàng (COD)", "Ví MoMo (đang thiết lập)"];
+    [ObservableProperty] private string selectedPaymentMethod = "Thanh toán khi nhận hàng (COD)";
+    public bool IsOnlinePayment => SelectedPaymentMethod == "Ví MoMo (đang thiết lập)";
+    public string PaymentDescription => IsOnlinePayment
+        ? "MoMo đang được thiết lập. Bạn có thể chọn thanh toán khi nhận hàng để tiếp tục."
+        : "Thanh toán cho nhân viên giao hàng khi nhận được sản phẩm.";
+    public string PlaceOrderText => IsOnlinePayment ? "Thanh toán online" : "Đặt hàng";
+    [ObservableProperty] private bool isOrderCompleted;
+    [ObservableProperty] private int completedOrderId;
+    public bool IsCheckoutVisible => !IsOrderCompleted;
+    public bool CanPlaceOrder => !IsBusy && !IsOrderCompleted && HasSelectedAddress && CheckoutItems.Count > 0 && !IsOnlinePayment;
+
+    partial void OnSelectedPaymentMethodChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsOnlinePayment));
+        OnPropertyChanged(nameof(PaymentDescription));
+        OnPropertyChanged(nameof(PlaceOrderText));
+        OnPropertyChanged(nameof(CanPlaceOrder));
+    }
+
+    partial void OnIsOrderCompletedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsCheckoutVisible));
+        OnPropertyChanged(nameof(CanPlaceOrder));
+    }
+
+    [RelayCommand]
+    private Task ViewOrdersAsync() => Shell.Current.GoToAsync("../OrdersPage");
+
+    [RelayCommand]
+    private async Task ContinueShoppingAsync()
+    {
+        // Remove the completed checkout from the cart tab before switching tabs.
+        await Shell.Current.GoToAsync("..");
+        await Shell.Current.GoToAsync("//CatalogPage");
+    }
 
     [ObservableProperty]
     private string fullName = string.Empty;
@@ -66,11 +96,10 @@ public partial class CheckoutController : ObservableObject
     public bool HasNoEligibleVouchers => !IsBusy && EligibleVouchers.Count == 0 && string.IsNullOrWhiteSpace(VoucherMessage);
     [ObservableProperty] private string voucherMessage = string.Empty;
 
-    public CheckoutController(SupabaseService supabase, CartController cart, MockBankService mockBank)
+    public CheckoutController(SupabaseService supabase, CartController cart)
     {
         this.supabase = supabase;
         this.cart = cart;
-        this.mockBank = mockBank;
         LoadCartData();
         ApplyProfileContact(supabase.CurrentUser);
         OnPropertyChanged(nameof(HasSelectedAddress));
@@ -78,47 +107,19 @@ public partial class CheckoutController : ObservableObject
 
     private void LoadCartData()
     {
+        CheckoutItems.Clear();
+        foreach (var item in cart.SelectedItems)
+            CheckoutItems.Add(new CartItemModel
+            {
+                ProductId = item.ProductId, ProductName = item.ProductName,
+                Quantity = item.Quantity, UnitPrice = item.UnitPrice,
+                ImageName = item.ImageName, StockAvailable = item.StockAvailable
+            });
         cartTotalAmount = cart.TotalAmount;
         SubtotalAmount = cart.SubtotalAmount;
         ShippingAmount = cart.TotalAmount - cart.SubtotalAmount;
         TotalAmount = cartTotalAmount;
-    }
-
-    partial void OnTotalAmountChanged(decimal value) => MockPaymentMessage = string.Empty;
-
-    [RelayCommand]
-    private async Task SimulatePaymentAsync()
-    {
-        if (IsBusy || !IsMockBankAvailable) return;
-        if (cart.Items.Count == 0 || TotalAmount <= 0)
-        {
-            MockPaymentMessage = "Cần có đơn hàng với tổng tiền lớn hơn 0 để chạy thử.";
-            return;
-        }
-        try
-        {
-            IsBusy = true;
-            MockPaymentMessage = "Đang gọi API ngân hàng giả lập...";
-            var outcome = SelectedMockOutcome switch
-            {
-                "Thành công" => "succeeded", "Thất bại" => "failed",
-                "Hủy" => "cancelled", "Hết hạn" => "expired",
-                _ => throw new InvalidOperationException("Hãy chọn kết quả mô phỏng.")
-            };
-            var payment = await mockBank.SimulateAsync(TotalAmount, outcome);
-            var status = payment.Status switch
-            {
-                "succeeded" => "Thành công", "failed" => "Thất bại",
-                "cancelled" => "Đã hủy", "expired" => "Hết hạn",
-                _ => throw new HttpRequestException("API giả lập trả về trạng thái chưa hoàn tất.")
-            };
-            MockPaymentMessage = $"GIẢ LẬP — {status}\nSố tiền: {payment.Amount:N0} đ\nMã giao dịch: {payment.Id}";
-        }
-        catch (Exception)
-        {
-            MockPaymentMessage = "Không hoàn tất được giao dịch thử. Kiểm tra API giả lập đang chạy và kết nối Emulator, sau đó thử lại.";
-        }
-        finally { IsBusy = false; }
+        OnPropertyChanged(nameof(CanPlaceOrder));
     }
 
     public async Task<bool> LoadOrderAsync()
@@ -130,6 +131,7 @@ public partial class CheckoutController : ObservableObject
         {
             IsBusy = true;
             Message = string.Empty;
+            IsOrderCompleted = false;
             var customer = supabase.CurrentUser ?? await supabase.RestoreSessionAsync();
             if (customer is null)
             {
@@ -143,7 +145,7 @@ public partial class CheckoutController : ObservableObject
             if (string.IsNullOrWhiteSpace(VoucherCode))
                 VoucherDiscount = 0;
 
-            if (cart.Items.Count == 0)
+            if (CheckoutItems.Count == 0)
             {
                 Message = "Giỏ hàng đang trống.";
                 return false;
@@ -153,6 +155,7 @@ public partial class CheckoutController : ObservableObject
             Addresses.Clear();
             foreach (var item in addresses)
                 Addresses.Add(item);
+            OnPropertyChanged(nameof(SelectedAddressText));
             if (addresses.Count == 0)
             {
                 SelectedAddressId = 0;
@@ -214,7 +217,7 @@ public partial class CheckoutController : ObservableObject
     [RelayCommand]
     private void SelectAddress(AddressDto address)
     {
-        if (address is not null)
+        if (!IsBusy && address is not null && Addresses.Contains(address))
             SelectedAddressId = address.IdDiaChi;
     }
 
@@ -233,7 +236,7 @@ public partial class CheckoutController : ObservableObject
         try
         {
             IsBusy = true;
-            var discount = await supabase.ApplyVoucherAsync(voucher.IdVoucher, cart.SubtotalAmount);
+            var discount = await supabase.ApplyVoucherAsync(voucher.IdVoucher, SubtotalAmount);
             VoucherCode = discount > 0 ? voucher.IdVoucher : string.Empty;
             VoucherDiscount = discount;
             TotalAmount = Math.Max(0, cartTotalAmount - VoucherDiscount);
@@ -329,8 +332,14 @@ public partial class CheckoutController : ObservableObject
     [RelayCommand]
     private async Task ConfirmCheckoutAsync()
     {
-        if (IsBusy)
+        if (IsBusy || IsOrderCompleted)
             return;
+
+        if (IsOnlinePayment)
+        {
+            Message = PaymentDescription;
+            return;
+        }
 
         if (supabase.CurrentUser is null || !int.TryParse(supabase.CurrentUser.Id, out var customerId))
         {
@@ -338,7 +347,7 @@ public partial class CheckoutController : ObservableObject
             return;
         }
 
-        if (cart.Items.Count == 0)
+        if (CheckoutItems.Count == 0)
         {
             Message = "Giỏ hàng đang trống.";
             return;
@@ -362,7 +371,7 @@ public partial class CheckoutController : ObservableObject
             return;
         }
 
-        if (SelectedAddressId <= 0)
+        if (!Addresses.Any(a => a.IdDiaChi == SelectedAddressId))
         {
             Message = "Vui lòng chọn địa chỉ giao hàng.";
             return;
@@ -391,7 +400,7 @@ public partial class CheckoutController : ObservableObject
                 }
             }
 
-            var orderItems = cart.Items.Select(i => new OrderItemCreateDto
+            var orderItems = CheckoutItems.Select(i => new OrderItemCreateDto
             {
                 IdSanPham = i.ProductId,
                 SoLuong = i.Quantity,
@@ -409,17 +418,16 @@ public partial class CheckoutController : ObservableObject
                 IdVoucher = string.IsNullOrWhiteSpace(VoucherCode) ? null : VoucherCode.Trim()
             };
 
-            await supabase.CreateOrderAsync(orderDto, orderItems);
+            CompletedOrderId = await supabase.CreateOrderAsync(orderDto, orderItems);
 
-            cart.Clear();
+            foreach (var purchased in CheckoutItems)
+                cart.RemoveItem(purchased.ProductId);
             ClearVoucherState();
             SelectedAddressId = 0;
-
-            Message = "Đặt hàng thành công! Đội ngũ MOKHA sẽ liên hệ để xác nhận chi tiết.";
+            IsOrderCompleted = true;
+            Message = "Đặt hàng thành công. Bạn sẽ thanh toán khi nhận hàng.";
             OnPropertyChanged(nameof(Message));
 
-            // Navigate back after delay
-            await Shell.Current.GoToAsync("..");
         }
         catch (Exception ex)
         {
@@ -437,9 +445,15 @@ public partial class CheckoutController : ObservableObject
     {
         OnPropertyChanged(nameof(IsNotBusy));
         OnPropertyChanged(nameof(HasNoEligibleVouchers));
+        OnPropertyChanged(nameof(CanPlaceOrder));
     }
 
-    partial void OnSelectedAddressIdChanged(int value) => OnPropertyChanged(nameof(HasSelectedAddress));
+    partial void OnSelectedAddressIdChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasSelectedAddress));
+        OnPropertyChanged(nameof(SelectedAddressText));
+        OnPropertyChanged(nameof(CanPlaceOrder));
+    }
 
     private void ApplyProfileContact(AuthenticatedUser? customer)
     {

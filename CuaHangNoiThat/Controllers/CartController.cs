@@ -7,29 +7,56 @@ namespace CuaHangNoiThat.Controllers;
 
 public partial class CartController : ObservableObject
 {
-    [ObservableProperty]
-    private ObservableCollection<CartItemModel> items = new();
-
-    public string Subtotal => Items.Count > 0
-        ? Items.Sum(i => i.TotalPrice).ToString("N0") + " đ"
-        : "0 đ";
-
-    public string ShippingFee => Items.Count > 0
-        ? Items.Sum(i => i.TotalPrice) >= 500000 ? "Miễn phí" : "250.000 đ"
-        : "0 đ";
-
-    public string Total => Items.Count > 0
-        ? (Items.Sum(i => i.TotalPrice) + (Items.Sum(i => i.TotalPrice) >= 500000 ? 0 : 250000)).ToString("N0") + " đ"
-        : "0 đ";
-
+    public ObservableCollection<CartItemModel> Items { get; } = new();
+    public IReadOnlyList<CartItemModel> SelectedItems => Items.Where(i => i.IsSelected).ToList();
+    public int SelectedCount => SelectedItems.Count;
+    public bool HasSelectedItems => SelectedCount > 0;
     public bool HasItems => Items.Count > 0;
     public bool IsEmpty => !HasItems;
-    public decimal SubtotalAmount => Items.Sum(i => i.TotalPrice);
-    public decimal TotalAmount => SubtotalAmount + (SubtotalAmount >= 500000 ? 0 : 250000);
+    public decimal SubtotalAmount => SelectedItems.Sum(i => i.TotalPrice);
+    public decimal TotalAmount => HasSelectedItems ? SubtotalAmount + (SubtotalAmount >= 500000 ? 0 : 250000) : 0;
+    public string Subtotal => SubtotalAmount.ToString("N0") + " đ";
+    public string Total => TotalAmount.ToString("N0") + " đ";
+    public string ShippingFee => !HasSelectedItems ? "0 đ" : SubtotalAmount >= 500000 ? "Miễn phí" : "250.000 đ";
+    public string CheckoutLabel => $"Mua hàng ({SelectedCount})";
+    private bool changingSelection;
+    public bool IsAllSelected
+    {
+        get => HasItems && Items.All(i => i.IsSelected);
+        set
+        {
+            if (changingSelection) return;
+            changingSelection = true;
+            try { foreach (var item in Items) item.IsSelected = value; }
+            finally { changingSelection = false; }
+            NotifyTotals();
+        }
+    }
 
     public CartController()
     {
-        // Giỏ hàng tạm thời, sẽ bị xóa khi thoát app
+        Items.CollectionChanged += (_, e) =>
+        {
+            if (e.OldItems is not null)
+                foreach (CartItemModel item in e.OldItems) item.PropertyChanged -= ItemChanged;
+            if (e.NewItems is not null)
+                foreach (CartItemModel item in e.NewItems) item.PropertyChanged += ItemChanged;
+            NotifyTotals();
+        };
+    }
+
+    private void ItemChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (!changingSelection && e.PropertyName is nameof(CartItemModel.IsSelected) or nameof(CartItemModel.Quantity))
+            NotifyTotals();
+    }
+
+    private void NotifyTotals()
+    {
+        foreach (var name in new[] { nameof(Subtotal), nameof(Total), nameof(ShippingFee), nameof(HasItems),
+            nameof(IsEmpty), nameof(SubtotalAmount), nameof(TotalAmount), nameof(SelectedItems), nameof(SelectedCount),
+            nameof(HasSelectedItems), nameof(IsAllSelected), nameof(CheckoutLabel) })
+            OnPropertyChanged(name);
     }
 
     public void AddItem(CartItemModel item)
@@ -37,14 +64,25 @@ public partial class CartController : ObservableObject
         if (item is null)
             return;
 
-        if (item.StockAvailable <= 0)
-            return;
-
         var existing = Items.FirstOrDefault(i => i.ProductId == item.ProductId);
+        if (item.StockAvailable <= 0)
+        {
+            // A fresh catalog result can invalidate an older cart snapshot.
+            if (existing is not null)
+                RemoveItem(existing.ProductId);
+            return;
+        }
+
         if (existing is not null)
-            existing.SetQuantity(Math.Min(existing.StockAvailable, existing.Quantity + item.Quantity));
+        {
+            existing.StockAvailable = item.StockAvailable;
+            existing.SetQuantity((int)Math.Min(item.StockAvailable, (long)existing.Quantity + item.Quantity));
+        }
         else
+        {
+            item.SetQuantity(item.Quantity);
             Items.Add(item);
+        }
         OnPropertyChanged(nameof(Subtotal));
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(ShippingFee));
@@ -86,6 +124,7 @@ public partial class CartController : ObservableObject
 
     public void Clear()
     {
+        foreach (var item in Items) item.PropertyChanged -= ItemChanged;
         Items.Clear();
         OnPropertyChanged(nameof(Subtotal));
         OnPropertyChanged(nameof(Total));
@@ -116,7 +155,7 @@ public partial class CartController : ObservableObject
     private void RemoveCartItem(CartItemModel item) => RemoveItem(item.ProductId);
 
     [RelayCommand]
-    private Task CheckoutAsync() => Shell.Current.GoToAsync("CheckoutPage");
+    private Task CheckoutAsync() => HasSelectedItems ? Shell.Current.GoToAsync("CheckoutPage") : Task.CompletedTask;
 
     [RelayCommand]
     private Task GoToCatalog() => Shell.Current.GoToAsync("//CatalogPage");

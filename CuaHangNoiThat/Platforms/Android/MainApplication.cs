@@ -3,11 +3,7 @@ using Android.Runtime;
 
 namespace CuaHangNoiThat
 {
-#if DEBUG
-    [Application(NetworkSecurityConfig = "@xml/mock_bank_network_security")]
-#else
     [Application]
-#endif
     public class MainApplication : MauiApplication
     {
         public MainApplication(IntPtr handle, JniHandleOwnership ownership)

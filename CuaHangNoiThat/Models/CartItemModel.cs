@@ -5,6 +5,10 @@ namespace CuaHangNoiThat.Models;
 
 public partial class CartItemModel : ObservableObject
 {
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool isSelected = true;
+
     [JsonPropertyName("id_sanpham")]
     public int ProductId { get; set; }
 

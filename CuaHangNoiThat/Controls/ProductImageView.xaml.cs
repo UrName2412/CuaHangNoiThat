@@ -65,10 +65,9 @@ public partial class ProductImageView : ContentView
                 }
                 bytes = buffer.ToArray();
 #if ANDROID
-                using var options = new Android.Graphics.BitmapFactory.Options { InJustDecodeBounds = true };
-                using var bounds = Android.Graphics.BitmapFactory.DecodeByteArray(bytes, 0, bytes.Length, options);
-                if (options.OutWidth <= 0 || options.OutHeight <= 0) throw new InvalidDataException();
+                bytes = await Task.Run(() => PrepareAndroidImage(bytes, current.Token), current.Token);
 #endif
+                current.Token.ThrowIfCancellationRequested();
                 lock (CacheLock)
                 {
                     if (!Cache.ContainsKey(uri.AbsoluteUri))
@@ -99,4 +98,52 @@ public partial class ProductImageView : ContentView
             if (request == current) Loading.IsVisible = Loading.IsRunning = false;
         }
     }
+
+#if ANDROID
+    private static byte[] PrepareAndroidImage(byte[] bytes, CancellationToken cancellationToken)
+    {
+        using var options = new Android.Graphics.BitmapFactory.Options { InJustDecodeBounds = true };
+        using var bounds = Android.Graphics.BitmapFactory.DecodeByteArray(bytes, 0, bytes.Length, options);
+        var sampleSize = Services.ImageDecodePolicy.GetSampleSize(options.OutWidth, options.OutHeight);
+        // Preserve the original metadata for images that already fit the limit.
+        if (sampleSize == 1) return bytes;
+
+        cancellationToken.ThrowIfCancellationRequested();
+        options.InJustDecodeBounds = false;
+        options.InSampleSize = sampleSize;
+        options.InScaled = false;
+        using var bitmap = Android.Graphics.BitmapFactory.DecodeByteArray(bytes, 0, bytes.Length, options)
+            ?? throw new InvalidDataException("Image decoding failed.");
+        if (bitmap.Width > Services.ImageDecodePolicy.MaxDecodedDimension ||
+            bitmap.Height > Services.ImageDecodePolicy.MaxDecodedDimension)
+            throw new InvalidDataException("Decoded image exceeds the supported limit.");
+
+        cancellationToken.ThrowIfCancellationRequested();
+        // BitmapFactory does not apply EXIF orientation. Preserve it before stripping
+        // metadata by re-encoding the sampled bitmap (including mirrored photos).
+        using var original = new MemoryStream(bytes, writable: false);
+        using var exif = new AndroidX.ExifInterface.Media.ExifInterface(original);
+        var orientation = exif.GetAttributeInt(AndroidX.ExifInterface.Media.ExifInterface.TagOrientation, 1);
+        using var matrix = new Android.Graphics.Matrix();
+        switch (orientation)
+        {
+            case 2: matrix.SetScale(-1, 1); break;
+            case 3: matrix.SetRotate(180); break;
+            case 4: matrix.SetRotate(180); matrix.PostScale(-1, 1); break;
+            case 5: matrix.SetRotate(90); matrix.PostScale(-1, 1); break;
+            case 6: matrix.SetRotate(90); break;
+            case 7: matrix.SetRotate(-90); matrix.PostScale(-1, 1); break;
+            case 8: matrix.SetRotate(-90); break;
+        }
+        using var oriented = orientation is >= 2 and <= 8
+            ? Android.Graphics.Bitmap.CreateBitmap(bitmap, 0, 0, bitmap.Width, bitmap.Height, matrix, true)
+            : null;
+        using var output = new MemoryStream();
+        // Cache the bounded bitmap, so the UI never decodes the original oversized image.
+        if (!(oriented ?? bitmap).Compress(Android.Graphics.Bitmap.CompressFormat.Png!, 100, output))
+            throw new InvalidDataException("Image encoding failed.");
+        cancellationToken.ThrowIfCancellationRequested();
+        return output.ToArray();
+    }
+#endif
 }

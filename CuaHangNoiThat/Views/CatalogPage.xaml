@@ -51,7 +51,7 @@
 
         <Grid Grid.Row="2" Padding="20,4,20,8" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="10">
             <Label Text="Sản phẩm" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center" />
-            <Button Grid.Column="1" Text="{Binding FilterButtonText}" Command="{Binding OpenFiltersCommand}" Style="{StaticResource SecondaryButton}" FontSize="12" />
+            <Button Grid.Column="1" Text="{Binding FilterButtonText}" Command="{Binding OpenFiltersCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" FontSize="12" />
             <Label Grid.Row="1"
                    Text="{Binding Items.Count, StringFormat='{0} sản phẩm'}"
                    Style="{StaticResource Caption}"
@@ -139,7 +139,7 @@
                 <CollectionView.EmptyView>
                     <VerticalStackLayout IsVisible="{Binding Source={x:Reference PageRoot}, Path=BindingContext.ShowEmptyState}" HorizontalOptions="Center" VerticalOptions="Center" Spacing="8" Padding="28">
                         <Label Text="Chưa tìm thấy sản phẩm" Style="{StaticResource SectionTitle}" HorizontalTextAlignment="Center" />
-                        <Label Text="Thử từ khóa khác hoặc chọn danh mục khác." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
+                        <Label Text="Thử đổi từ khóa, phong cách hoặc xóa bớt điều kiện lọc." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
                     </VerticalStackLayout>
                 </CollectionView.EmptyView>
             </CollectionView>

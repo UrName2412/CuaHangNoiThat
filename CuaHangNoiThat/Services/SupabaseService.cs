@@ -81,29 +81,16 @@ public sealed class SupabaseService
     {
         var config = await configuration;
         var normalizedEmail = email.Trim();
-        var existing = await FetchListAsync<CustomerDto>(
-            config,
-            $"/rest/v1/khachhang?select=id_khachhang&email=eq.{Uri.EscapeDataString(normalizedEmail)}&limit=1",
-            cancellationToken);
-        if (existing.Count > 0)
-            throw new InvalidOperationException("Email này đã được đăng ký. Hãy dùng email khác.");
-
-        var createdCustomers = await SendJsonReturningAsync<CustomerDto>(config, HttpMethod.Post, "/rest/v1/khachhang?select=id_khachhang", new
+        // The RPC inserts both records in one database transaction. Never fall back to
+        // separate requests: a failed account insert must roll back the customer too.
+        var createdCustomers = await SendJsonReturningAsync<CustomerDto>(config, HttpMethod.Post, "/rest/v1/rpc/register_customer", new
         {
-            hoten = fullName.Trim(),
-            email = normalizedEmail
+            p_full_name = fullName.Trim(),
+            p_email = normalizedEmail,
+            p_password_hash = HashPassword(password)
         }, cancellationToken);
         var newId = createdCustomers.FirstOrDefault()?.IdKhachhang
             ?? throw new HttpRequestException("Supabase không trả về mã khách hàng vừa tạo.");
-
-        await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/dangnhap", new
-        {
-            tendangnhap = normalizedEmail,
-            loaitaikhoan = "KHACHHANG",
-            matkhau = HashPassword(password),
-            id_khachhang = newId,
-            trangthai = 1
-        }, cancellationToken);
 
         currentUser = new AuthenticatedUser(newId.ToString(), normalizedEmail, fullName.Trim(), string.Empty);
         await SecureStorage.Default.SetAsync("supabase_user", JsonSerializer.Serialize(currentUser, JsonOptions));
@@ -273,9 +260,13 @@ public sealed class SupabaseService
         var styleMap = lookups.Kieudang
             .Where(x => x.IdKieudang.HasValue)
             .GroupBy(x => x.IdKieudang!.Value)
-            .ToDictionary(x => x.Key, x => x.First().Tenkieudang ?? string.Empty);
+            .ToDictionary(x => x.Key, x => x.First());
+        var productTypeMap = lookups.Loaisp
+            .Where(x => x.IdLoaiSp.HasValue)
+            .GroupBy(x => x.IdLoaiSp!.Value)
+            .ToDictionary(x => x.Key, x => x.First().TenLoai ?? string.Empty);
 
-        return products.Select(p => MapProduct(p, woodMap, styleMap, config)).ToList();
+        return products.Select(p => MapProduct(p, woodMap, styleMap, productTypeMap, config)).ToList();
     }
 
     public async Task<ProductDto?> GetProductByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -303,23 +294,35 @@ public sealed class SupabaseService
         var styleMap = lookups.Kieudang
             .Where(x => x.IdKieudang.HasValue)
             .GroupBy(x => x.IdKieudang!.Value)
-            .ToDictionary(x => x.Key, x => x.First().Tenkieudang ?? string.Empty);
+            .ToDictionary(x => x.Key, x => x.First());
+        var productTypeMap = lookups.Loaisp
+            .Where(x => x.IdLoaiSp.HasValue)
+            .GroupBy(x => x.IdLoaiSp!.Value)
+            .ToDictionary(x => x.Key, x => x.First().TenLoai ?? string.Empty);
 
-        return MapProduct(product, woodMap, styleMap, config);
+        return MapProduct(product, woodMap, styleMap, productTypeMap, config);
     }
 
     private static FurnitureItem MapProduct(
         ProductDto product,
         IReadOnlyDictionary<int, string> woodMap,
-        IReadOnlyDictionary<int, string> styleMap,
-        SupabaseConfiguration config) =>
-        new()
+        IReadOnlyDictionary<int, KieudangDto> styleMap,
+        IReadOnlyDictionary<int, string> productTypeMap,
+        SupabaseConfiguration config)
+    {
+        var style = styleMap.GetValueOrDefault(product.IdKieuDang.GetValueOrDefault());
+        var styleName = style is null ? null : style.Tenkieudang ?? string.Empty;
+        return new()
         {
             IdSanPham = product.IdSanPham,
             Name = product.TenSanPham ?? string.Empty,
-            Category = styleMap.GetValueOrDefault(product.IdKieuDang.GetValueOrDefault())
+            Category = styleName
                 ?? woodMap.GetValueOrDefault(product.IdMaGo.GetValueOrDefault())
                 ?? "Nội thất",
+            ProductTypeId = style?.IdLoaiSp,
+            ProductType = productTypeMap.GetValueOrDefault(style?.IdLoaiSp ?? 0) ?? string.Empty,
+            WoodTypeId = product.IdMaGo,
+            WoodType = woodMap.GetValueOrDefault(product.IdMaGo.GetValueOrDefault()) ?? string.Empty,
             Description = product.MoTa ?? string.Empty,
             Price = product.DonGia.GetValueOrDefault() * (1 - GetProductDiscount(product) / 100m),
             OriginalPrice = product.DonGia.GetValueOrDefault(),
@@ -327,6 +330,7 @@ public sealed class SupabaseService
             StockAvailable = Math.Max(0, product.SoLuong.GetValueOrDefault()),
             ImageName = GetStorageImageUrl(config, product.HinhAnh),
         };
+    }
 
     private static decimal GetProductDiscount(ProductDto product)
     {
@@ -411,8 +415,11 @@ public sealed class SupabaseService
     {
         var config = await configuration;
         var customerId = GetCurrentCustomerId();
-        await UpdateAsync(config, $"/rest/v1/diachigiaohang?id_khachhang=eq.{customerId}", new { macdinh = 0 }, cancellationToken);
-        await UpdateAsync(config, $"/rest/v1/diachigiaohang?id_diachi=eq.{addressId}&id_khachhang=eq.{customerId}", new { macdinh = 1 }, cancellationToken);
+        await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/rpc/set_default_address", new
+        {
+            p_customer_id = customerId,
+            p_address_id = addressId
+        }, cancellationToken);
     }
 
     public async Task ChangePasswordAsync(string currentPassword, string newPassword, CancellationToken cancellationToken = default)
@@ -434,15 +441,19 @@ public sealed class SupabaseService
     {
         var config = await configuration;
         var customerId = GetCurrentCustomerId();
-        await UpdateAsync(config, $"/rest/v1/dangnhap?id_khachhang=eq.{customerId}&loaitaikhoan=eq.KHACHHANG", new
+        var normalizedFullName = fullName.Trim();
+        var normalizedEmail = email.Trim();
+        var normalizedPhone = phone.Trim();
+
+        await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/rpc/update_customer_profile", new
         {
-            tendangnhap = email.Trim()
+            p_customer_id = customerId,
+            p_full_name = normalizedFullName,
+            p_email = normalizedEmail,
+            p_phone = normalizedPhone
         }, cancellationToken);
-        await UpdateAsync(config, $"/rest/v1/khachhang?id_khachhang=eq.{customerId}", new
-        {
-            hoten = fullName.Trim(), email = email.Trim(), sdt = phone.Trim()
-        }, cancellationToken);
-        currentUser = currentUser! with { FullName = fullName.Trim(), Email = email.Trim(), Phone = phone.Trim() };
+
+        currentUser = currentUser! with { FullName = normalizedFullName, Email = normalizedEmail, Phone = normalizedPhone };
         await SecureStorage.Default.SetAsync("supabase_user", JsonSerializer.Serialize(currentUser, JsonOptions));
     }
 
@@ -572,11 +583,12 @@ public sealed class SupabaseService
         return await response.Content.ReadFromJsonAsync<IReadOnlyList<ProductDto>>(JsonOptions, cancellationToken) ?? [];
     }
 
-    private async Task<(IReadOnlyList<LoaigoDto> Loaigo, IReadOnlyList<KieudangDto> Kieudang)> FetchLookupsAsync(SupabaseConfiguration config, CancellationToken cancellationToken)
+    private async Task<(IReadOnlyList<LoaigoDto> Loaigo, IReadOnlyList<KieudangDto> Kieudang, IReadOnlyList<LoaispDto> Loaisp)> FetchLookupsAsync(SupabaseConfiguration config, CancellationToken cancellationToken)
     {
         var loaigo = await FetchListAsync<LoaigoDto>(config, "/rest/v1/loaigo?select=id_mago,tengo&isdeleted=eq.0&trangthai=eq.1", cancellationToken);
-        var kieudang = await FetchListAsync<KieudangDto>(config, "/rest/v1/kieudang?select=id_kieudang,tenkieudang&isdeleted=eq.0&trangthai=eq.1", cancellationToken);
-        return (loaigo, kieudang);
+        var kieudang = await FetchListAsync<KieudangDto>(config, "/rest/v1/kieudang?select=id_kieudang,id_loaisp,tenkieudang&isdeleted=eq.0&trangthai=eq.1", cancellationToken);
+        var loaisp = await FetchListAsync<LoaispDto>(config, "/rest/v1/loaisp?select=id_loaisp,tenloai&isdeleted=eq.0&trangthai=eq.1", cancellationToken);
+        return (loaigo, kieudang, loaisp);
     }
 
     private async Task<IReadOnlyList<T>> FetchListAsync<T>(SupabaseConfiguration config, string path, CancellationToken cancellationToken)
@@ -701,7 +713,14 @@ public sealed class SupabaseService
     private sealed class KieudangDto
     {
         [JsonPropertyName("id_kieudang")] public int? IdKieudang { get; set; }
+        [JsonPropertyName("id_loaisp")] public int? IdLoaiSp { get; set; }
         [JsonPropertyName("tenkieudang")] public string? Tenkieudang { get; set; }
+    }
+
+    private sealed class LoaispDto
+    {
+        [JsonPropertyName("id_loaisp")] public int? IdLoaiSp { get; set; }
+        [JsonPropertyName("tenloai")] public string? TenLoai { get; set; }
     }
 
     private sealed class OrderDto

@@ -9,6 +9,7 @@
              Title="Giỏ hàng"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource PageBackground}">
+    <Grid RowDefinitions="*,Auto">
     <ScrollView>
             <VerticalStackLayout Padding="20,18,20,24" Spacing="18">
                 <VerticalStackLayout Spacing="4">
@@ -20,8 +21,9 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models:CartItemModel">
                             <Border Style="{StaticResource Card}" Padding="12" Margin="0,0,0,10">
-                                <Grid ColumnDefinitions="84,*" ColumnSpacing="12">
-                                    <Border HeightRequest="96"
+                                <Grid ColumnDefinitions="Auto,84,*" ColumnSpacing="8">
+                                    <CheckBox IsChecked="{Binding IsSelected}" VerticalOptions="Start" Color="{StaticResource Primary}" SemanticProperties.Description="Chọn sản phẩm để mua" />
+                                    <Border Grid.Column="1" HeightRequest="96"
                                             BackgroundColor="{StaticResource Secondary}"
                                             StrokeThickness="0"
                                             StrokeShape="RoundRectangle 12"
@@ -31,7 +33,7 @@
                                             <Image Source="{Binding ImageName}" Aspect="AspectFill" SemanticProperties.Description="{Binding ProductName, StringFormat='Ảnh {0}'}" />
                                         </Grid>
                                     </Border>
-                                    <VerticalStackLayout Grid.Column="1" Spacing="6">
+                                    <VerticalStackLayout Grid.Column="2" Spacing="6">
                                         <Label Text="{Binding ProductName}" Style="{StaticResource CardTitle}" MaxLines="2" />
                                         <Label Text="{Binding UnitPriceFormatted}" Style="{StaticResource Caption}" />
                                         <Label Text="{Binding TotalPriceFormatted}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="{StaticResource Primary}" />
@@ -70,12 +72,20 @@
                         </Grid>
                     </VerticalStackLayout>
                 </Border>
-                <Button Text="TIẾN HÀNH THANH TOÁN  →"
-                        Command="{Binding CheckoutCommand}"
-                        IsEnabled="{Binding HasItems}"
-                        Style="{StaticResource PrimaryButton}"
-                        HeightRequest="52"
-                        Margin="0,2,0,0" />
             </VerticalStackLayout>
     </ScrollView>
+    <Border Grid.Row="1" BackgroundColor="{StaticResource Surface}" Stroke="{StaticResource BorderSubtle}" Padding="12">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <HorizontalStackLayout Spacing="0">
+                <CheckBox IsChecked="{Binding IsAllSelected}" Color="{StaticResource Primary}" SemanticProperties.Description="Chọn tất cả sản phẩm" />
+                <Label Text="Tất cả" VerticalOptions="Center" FontSize="12" />
+            </HorizontalStackLayout>
+            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="End">
+                <Label Text="Tổng cộng" Style="{StaticResource Caption}" />
+                <Label Text="{Binding Total}" TextColor="{StaticResource Primary}" FontFamily="OpenSansSemibold" />
+            </VerticalStackLayout>
+            <Button Grid.Column="2" Text="{Binding CheckoutLabel}" Command="{Binding CheckoutCommand}" IsEnabled="{Binding HasSelectedItems}" Style="{StaticResource PrimaryButton}" Padding="14,0" />
+        </Grid>
+    </Border>
+    </Grid>
 </ContentPage>

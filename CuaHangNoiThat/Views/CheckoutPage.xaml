@@ -8,13 +8,20 @@
              x:Name="PageRoot"
              Title="Thanh toán"
              BackgroundColor="{StaticResource PageBackground}">
-    <ScrollView>
+    <Grid RowDefinitions="*,Auto">
+    <ScrollView IsVisible="{Binding IsCheckoutVisible}">
             <VerticalStackLayout Padding="20,18,20,24" Spacing="20">
                 <VerticalStackLayout Spacing="4">
                     <Label Text="MOKHA LIVING" Style="{StaticResource Eyebrow}" />
                     <Label Text="Kiểm tra thông tin trước khi hoàn tất đơn hàng." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
                 </VerticalStackLayout>
 
+                <Border Style="{StaticResource Card}" Padding="16">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Giao đến" Style="{StaticResource Eyebrow}" />
+                        <Label Text="{Binding SelectedAddressText}" Style="{StaticResource CardTitle}" />
+                    </VerticalStackLayout>
+                </Border>
                 <VerticalStackLayout Spacing="12">
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Text="Thông tin liên hệ" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center" />
@@ -68,6 +75,26 @@
                     </VerticalStackLayout>
                 </VerticalStackLayout>
 
+                <Border Style="{StaticResource Card}" Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Sản phẩm đã chọn" Style="{StaticResource SectionTitle}" />
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding CheckoutItems}" Spacing="12">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="models:CartItemModel">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                                        <Label Text="{Binding ProductName}" Style="{StaticResource CardTitle}" />
+                                        <Label Grid.Column="1" Text="{Binding Quantity, StringFormat='x{0}'}" />
+                                        <Label Grid.Row="1" Text="{Binding UnitPriceFormatted}" Style="{StaticResource Caption}" />
+                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding TotalPriceFormatted}" TextColor="{StaticResource Primary}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                        <BoxView HeightRequest="1" Color="{StaticResource BorderSubtle}" />
+                        <Label Text="Giao hàng tiêu chuẩn" Style="{StaticResource CardTitle}" />
+                        <Label Text="MOKHA sẽ liên hệ xác nhận thời gian giao và lắp đặt." Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                </Border>
                 <VerticalStackLayout Spacing="10">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <Label Text="Chọn voucher" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center" />
@@ -111,14 +138,11 @@
                     <Label Text="{Binding VoucherMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Danger}" />
                 </VerticalStackLayout>
 
-                <Border IsVisible="{Binding IsMockBankAvailable}" Style="{StaticResource Card}" Padding="16">
-                    <VerticalStackLayout Spacing="10">
-                        <Label Text="Ngân hàng giả lập" Style="{StaticResource SectionTitle}" />
-                        <Label Text="Chạy giao dịch thử với tổng tiền hiện tại. Không chuyển tiền, không tạo đơn hàng. Xác nhận đơn hàng bên dưới là thao tác riêng." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
-                        <Label Text="Kết quả muốn mô phỏng" Style="{StaticResource Caption}" />
-                        <Picker ItemsSource="{Binding MockOutcomes}" SelectedItem="{Binding SelectedMockOutcome}" IsEnabled="{Binding IsNotBusy}" Title="Chọn kết quả mô phỏng" />
-                        <Button Text="Thanh toán thử qua API" Command="{Binding SimulatePaymentCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" />
-                        <Label Text="{Binding MockPaymentMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Primary}" />
+                <Border Style="{StaticResource Card}" Padding="16">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Phương thức thanh toán" Style="{StaticResource SectionTitle}" />
+                        <Picker ItemsSource="{Binding PaymentMethods}" SelectedItem="{Binding SelectedPaymentMethod}" IsEnabled="{Binding IsNotBusy}" Title="Chọn phương thức thanh toán" />
+                        <Label Text="{Binding PaymentDescription}" Style="{StaticResource Caption}" />
                     </VerticalStackLayout>
                 </Border>
 
@@ -149,13 +173,28 @@
                     <Label Text="Tổng thanh toán" FontFamily="OpenSansSemibold" FontSize="15" />
                     <Label Grid.Column="1" Text="{Binding TotalAmount, StringFormat='{0:N0} đ'}" FontFamily="OpenSansSemibold" FontSize="17" TextColor="{StaticResource Primary}" />
                 </Grid>
-                <Button Text="XÁC NHẬN ĐƠN HÀNG"
-                        Command="{Binding ConfirmCheckoutCommand}"
-                        IsEnabled="{Binding IsNotBusy}"
-                        Style="{StaticResource PrimaryButton}"
-                        HeightRequest="52" />
+
             </VerticalStackLayout>
                 </Border>
             </VerticalStackLayout>
     </ScrollView>
+    <Border Grid.Row="1" IsVisible="{Binding IsCheckoutVisible}" BackgroundColor="{StaticResource Surface}" Stroke="{StaticResource BorderSubtle}" Padding="16,12">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <VerticalStackLayout VerticalOptions="Center">
+                <Label Text="Tổng thanh toán" Style="{StaticResource Caption}" />
+                <Label Text="{Binding TotalAmount, StringFormat='{0:N0} đ'}" TextColor="{StaticResource Primary}" FontSize="20" FontFamily="OpenSansSemibold" />
+            </VerticalStackLayout>
+            <Button Grid.Column="1" Text="{Binding PlaceOrderText}" Command="{Binding ConfirmCheckoutCommand}" IsEnabled="{Binding CanPlaceOrder}" Style="{StaticResource PrimaryButton}" Padding="24,0" />
+        </Grid>
+    </Border>
+    <ScrollView Grid.RowSpan="2" IsVisible="{Binding IsOrderCompleted}">
+        <VerticalStackLayout Padding="28,48" Spacing="20" VerticalOptions="Center">
+            <Label Text="Đặt hàng thành công" Style="{StaticResource PageTitle}" HorizontalTextAlignment="Center" TextColor="{StaticResource Success}" />
+            <Label Text="{Binding CompletedOrderId, StringFormat='Mã đơn hàng: #{0}'}" HorizontalTextAlignment="Center" />
+            <Label Text="{Binding Message}" Style="{StaticResource BodyText}" HorizontalTextAlignment="Center" />
+            <Button Text="Xem đơn mua" Command="{Binding ViewOrdersCommand}" Style="{StaticResource PrimaryButton}" />
+            <Button Text="Tiếp tục mua sắm" Command="{Binding ContinueShoppingCommand}" Style="{StaticResource SecondaryButton}" />
+        </VerticalStackLayout>
+    </ScrollView>
+    </Grid>
 </ContentPage>
