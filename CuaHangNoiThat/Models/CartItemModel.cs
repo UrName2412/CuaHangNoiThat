@@ -12,23 +12,29 @@ public partial class CartItemModel : ObservableObject
     [JsonPropertyName("id_sanpham")]
     public int ProductId { get; set; }
 
-    [JsonPropertyName("tensanpham")]
-    public string ProductName { get; set; } = string.Empty;
+    [ObservableProperty]
+    [property: JsonPropertyName("tensanpham")]
+    private string productName = string.Empty;
 
     [JsonPropertyName("soluong")]
     public int Quantity { get; set; }
 
-    [JsonIgnore]
-    public int StockAvailable { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanIncreaseQuantity))]
+    [property: JsonIgnore]
+    private int stockAvailable;
 
     [JsonIgnore]
     public bool CanIncreaseQuantity => Quantity < StockAvailable;
 
-    [JsonPropertyName("dongia")]
-    public decimal UnitPrice { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UnitPriceFormatted), nameof(TotalPrice), nameof(TotalPriceFormatted))]
+    [property: JsonPropertyName("dongia")]
+    private decimal unitPrice;
 
-    [JsonPropertyName("hinhanh")]
-    public string? ImageName { get; set; }
+    [ObservableProperty]
+    [property: JsonPropertyName("hinhanh")]
+    private string? imageName;
 
     public decimal TotalPrice => UnitPrice * Quantity;
 

@@ -24,11 +24,15 @@ public partial class ProfileController : ObservableObject
 
     public void Load()
     {
+        ClearPasswords();
+        Message = string.Empty;
         var user = supabase.CurrentUser;
         FullName = user?.FullName ?? string.Empty;
         Email = user?.Email ?? string.Empty;
         Phone = user?.Phone ?? string.Empty;
     }
+
+    public void ClearPasswords() => CurrentPassword = NewPassword = ConfirmPassword = string.Empty;
 
     [RelayCommand]
     private async Task SaveAsync()

@@ -3,11 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:CuaHangNoiThat.Models"
              xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
+             xmlns:controls="clr-namespace:CuaHangNoiThat.Controls"
              x:Class="CuaHangNoiThat.Views.AddressPage"
              x:DataType="controllers:AddressController"
              x:Name="PageRoot"
              Title="Địa chỉ giao hàng"
              BackgroundColor="{StaticResource PageBackground}">
+    <Grid>
     <ScrollView>
             <VerticalStackLayout Padding="20,18,20,24" Spacing="16">
                 <VerticalStackLayout Spacing="4">
@@ -59,27 +61,79 @@
                     </VerticalStackLayout>
                 </Border>
                 <Label Text="{Binding Message}" Style="{StaticResource BodyText}" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" />
+                <Label Text="{Binding ErrorMessage}" IsVisible="{Binding HasError}" Style="{StaticResource BodyText}" TextColor="{StaticResource Danger}" HorizontalTextAlignment="Center" />
+                <Button Text="Tải lại danh sách địa chỉ" IsVisible="{Binding CanRetryAddresses}" Command="{Binding RetryAddressesCommand}" Style="{StaticResource SecondaryButton}" />
                 <Border BackgroundColor="{StaticResource Surface}" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 16" Padding="16" Margin="0,4,0,0">
             <VerticalStackLayout Spacing="9">
                 <Label Text="Thêm địa chỉ mới" Style="{StaticResource SectionTitle}" />
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                    <Border Style="{StaticResource FieldSurface}">
-                        <Entry Placeholder="Mã tỉnh/thành" Text="{Binding ProvinceCode}" Keyboard="Numeric" ReturnType="Next" />
-                    </Border>
-                    <Border Grid.Column="1" Style="{StaticResource FieldSurface}">
-                        <Entry Placeholder="Mã phường/xã" Text="{Binding WardCode}" Keyboard="Numeric" ReturnType="Next" />
-                    </Border>
-                </Grid>
+                <Label Text="Tỉnh/thành phố" Style="{StaticResource Caption}" />
+                <Border Style="{StaticResource FieldSurface}" Padding="14,4">
+                    <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44">
+                        <Label Text="{Binding SelectedProvinceName}" Style="{StaticResource BodyText}" VerticalTextAlignment="Center" />
+                        <Label Grid.Column="1" Text="›" TextColor="{StaticResource Primary}" FontSize="24" VerticalTextAlignment="Center" />
+                        <Button Grid.ColumnSpan="2" Command="{Binding OpenProvinceChoicesCommand}" IsEnabled="{Binding CanChooseProvince}"
+                                BackgroundColor="Transparent" BorderWidth="0" SemanticProperties.Description="{Binding SelectedProvinceName}" />
+                    </Grid>
+                </Border>
+                <ActivityIndicator IsVisible="{Binding IsLoadingProvinces}" IsRunning="{Binding IsLoadingProvinces}" Color="{StaticResource Primary}" />
+                <Button Text="Tải lại tỉnh/thành" Command="{Binding LoadProvincesCommand}" IsVisible="{Binding CanRetryProvinces}" Style="{StaticResource SecondaryButton}" />
+                <Label Text="Phường/xã" Style="{StaticResource Caption}" />
+                <Border Style="{StaticResource FieldSurface}" Padding="14,4">
+                    <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44">
+                        <Label Text="{Binding SelectedWardName}" Style="{StaticResource BodyText}" VerticalTextAlignment="Center" />
+                        <Label Grid.Column="1" Text="›" TextColor="{StaticResource Primary}" FontSize="24" VerticalTextAlignment="Center" />
+                        <Button Grid.ColumnSpan="2" Command="{Binding OpenWardChoicesCommand}" IsEnabled="{Binding CanChooseWard}"
+                                BackgroundColor="Transparent" BorderWidth="0" SemanticProperties.Description="{Binding SelectedWardName}" />
+                    </Grid>
+                </Border>
+                <ActivityIndicator IsVisible="{Binding IsLoadingWards}" IsRunning="{Binding IsLoadingWards}" Color="{StaticResource Primary}" />
+                <Button Text="Tải lại phường/xã" Command="{Binding LoadWardsCommand}" IsVisible="{Binding CanRetryWards}" Style="{StaticResource SecondaryButton}" />
+                <Label Text="{Binding LocationMessage}" Style="{StaticResource Caption}" TextColor="{StaticResource Danger}" />
+                <Label Text="Số nhà, tên đường" Style="{StaticResource Caption}" />
                 <Border Style="{StaticResource FieldSurface}">
-                    <Entry Placeholder="Số nhà, tên đường" Text="{Binding Street}" ReturnType="Done" />
+                    <Entry Placeholder="Số nhà, tên đường" Text="{Binding Street}" ReturnType="Done" IsEnabled="{Binding IsNotBusy}" />
                 </Border>
                 <HorizontalStackLayout Spacing="8">
-                    <CheckBox IsChecked="{Binding MakeDefault}" Color="{StaticResource Primary}" />
+                    <controls:AppCheckBox IsChecked="{Binding MakeDefault}" AccessibleName="Đặt làm địa chỉ mặc định" />
                     <Label Text="Đặt làm địa chỉ mặc định" Style="{StaticResource BodyText}" VerticalTextAlignment="Center" />
                 </HorizontalStackLayout>
-                <Button Text="Lưu địa chỉ" Command="{Binding AddAddressCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource PrimaryButton}" />
+                <Button Text="Lưu địa chỉ" Command="{Binding AddAddressCommand}" IsEnabled="{Binding CanSaveAddress}" Style="{StaticResource PrimaryButton}" />
             </VerticalStackLayout>
                 </Border>
             </VerticalStackLayout>
     </ScrollView>
+    <Grid IsVisible="{Binding IsLocationPickerOpen}" BackgroundColor="#80000000">
+        <Border BackgroundColor="{StaticResource PageBackground}" StrokeThickness="0" StrokeShape="RoundRectangle 22,22,0,0" VerticalOptions="End" Padding="20,18,20,24">
+            <VerticalStackLayout Spacing="14">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="3" VerticalOptions="Center">
+                        <Label Text="{Binding LocationPickerTitle}" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Chọn khu vực giao hàng" Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1" Text="Đóng" Command="{Binding CloseLocationChoicesCommand}" Style="{StaticResource SecondaryButton}" FontSize="12" Padding="12,0" />
+                </Grid>
+                <CollectionView ItemsSource="{Binding LocationChoices}" SelectionMode="None" HeightRequest="340">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="controllers:LocationChoice">
+                            <Border Style="{StaticResource Card}" Padding="14" Margin="0,0,0,8">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Secondary}" />
+                                        <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="42">
+                                    <Label Text="{Binding Label}" Style="{StaticResource BodyText}" VerticalTextAlignment="Center" />
+                                    <Label Grid.Column="1" Text="✓" IsVisible="{Binding IsSelected}" TextColor="{StaticResource Primary}" FontSize="18" VerticalTextAlignment="Center" />
+                                    <Button Grid.ColumnSpan="2" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectLocationCommand}"
+                                            CommandParameter="{Binding .}" BackgroundColor="Transparent" BorderWidth="0" SemanticProperties.Description="{Binding Label}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+    </Grid>
 </ContentPage>

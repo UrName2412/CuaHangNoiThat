@@ -7,7 +7,7 @@
              x:Class="CuaHangNoiThat.Views.HomePage" x:Name="PageRoot"
              x:DataType="controllers:HomeController" Title="Trang chủ"
              Shell.NavBarIsVisible="False" SafeAreaEdges="Container" BackgroundColor="{StaticResource PageBackground}">
-    <CollectionView ItemsSource="{Binding FeaturedItems}" SelectionMode="None" Margin="16,0"
+    <CollectionView ItemsSource="{Binding PreviewItems}" SelectionMode="None" Margin="16,0"
                     VerticalScrollBarVisibility="Never">
         <CollectionView.ItemsLayout>
             <GridItemsLayout Orientation="Vertical" HorizontalItemSpacing="12" VerticalItemSpacing="14">
@@ -74,7 +74,7 @@
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                     <VerticalStackLayout Spacing="3">
                         <Label Text="Sản phẩm" Style="{StaticResource SectionTitle}" FontSize="23" />
-                        <Label Text="{Binding FeaturedItems.Count, StringFormat='{0} sản phẩm để khám phá'}" Style="{StaticResource Caption}" />
+                        <Label Text="{Binding PreviewItems.Count, StringFormat='{0} sản phẩm để khám phá'}" Style="{StaticResource Caption}" />
                     </VerticalStackLayout>
                     <Button Grid.Column="1" Text="Xem tất cả ↗" Command="{Binding OpenCatalogCommand}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" FontSize="12" Padding="4,0" />
                 </Grid>

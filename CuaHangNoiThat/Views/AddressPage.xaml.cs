@@ -19,4 +19,15 @@ public partial class AddressPage : ContentPage
         base.OnAppearing();
         await controller.LoadAddressesAsync();
     }
+
+    protected override bool OnBackButtonPressed()
+    {
+        if (controller.IsLocationPickerOpen)
+        {
+            controller.CloseLocationChoicesCommand.Execute(null);
+            return true;
+        }
+
+        return base.OnBackButtonPressed();
+    }
 }

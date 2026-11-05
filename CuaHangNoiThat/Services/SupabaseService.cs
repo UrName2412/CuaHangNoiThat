@@ -81,19 +81,73 @@ public sealed class SupabaseService
     {
         var config = await configuration;
         var normalizedEmail = email.Trim();
-        // The RPC inserts both records in one database transaction. Never fall back to
-        // separate requests: a failed account insert must roll back the customer too.
-        var createdCustomers = await SendJsonReturningAsync<CustomerDto>(config, HttpMethod.Post, "/rest/v1/rpc/register_customer", new
+        var normalizedName = fullName.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedEmail) || string.IsNullOrWhiteSpace(normalizedName) ||
+            string.IsNullOrWhiteSpace(password))
+            throw new InvalidOperationException("Thông tin đăng ký không được để trống.");
+
+        var encodedEmail = Uri.EscapeDataString(normalizedEmail);
+        var existingCustomers = await FetchListAsync<CustomerDto>(config,
+            $"/rest/v1/khachhang?select=id_khachhang&email=eq.{encodedEmail}&limit=1", cancellationToken);
+        var existingAccounts = await FetchListAsync<LoginAccountDto>(config,
+            $"/rest/v1/dangnhap?select=tendangnhap&tendangnhap=eq.{encodedEmail}&limit=1", cancellationToken);
+        if (existingCustomers.Count > 0 || existingAccounts.Count > 0)
+            throw new InvalidOperationException("Email này đã được đăng ký. Hãy đăng nhập hoặc dùng email khác.");
+
+        var passwordHash = HashPassword(password);
+        var createdCustomers = await SendJsonReturningAsync<CustomerDto>(config, HttpMethod.Post,
+            "/rest/v1/khachhang?select=id_khachhang", new
         {
-            p_full_name = fullName.Trim(),
-            p_email = normalizedEmail,
-            p_password_hash = HashPassword(password)
+            hoten = normalizedName,
+            email = normalizedEmail
         }, cancellationToken);
         var newId = createdCustomers.FirstOrDefault()?.IdKhachhang
             ?? throw new HttpRequestException("Supabase không trả về mã khách hàng vừa tạo.");
 
-        currentUser = new AuthenticatedUser(newId.ToString(), normalizedEmail, fullName.Trim(), string.Empty);
-        await SecureStorage.Default.SetAsync("supabase_user", JsonSerializer.Serialize(currentUser, JsonOptions));
+        try
+        {
+            await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/dangnhap", new
+            {
+                tendangnhap = normalizedEmail,
+                loaitaikhoan = "KHACHHANG",
+                matkhau = passwordHash,
+                id_khachhang = newId,
+                trangthai = 1
+            }, cancellationToken);
+        }
+        catch (HttpRequestException exception) when (
+            exception.StatusCode is { } status && (int)status >= 400 && (int)status < 500 && (int)status != 408)
+        {
+            // A rejected insert can be compensated. Use a fresh token even if the caller cancelled.
+            try
+            {
+                using var cleanupTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                var deleted = await SendJsonReturningAsync<CustomerDto>(config, HttpMethod.Delete,
+                    $"/rest/v1/khachhang?id_khachhang=eq.{newId}&select=id_khachhang", new { }, cleanupTimeout.Token);
+                if (!deleted.Any(customer => customer.IdKhachhang == newId))
+                    throw new InvalidOperationException("Không xóa được khách hàng vừa tạo.");
+            }
+            catch (Exception cleanupException)
+            {
+                throw new InvalidOperationException(
+                    $"Tạo tài khoản thất bại và chưa thể dọn thông tin khách hàng (mã {newId}). " +
+                    "Vui lòng liên hệ quản trị viên trước khi đăng ký lại.",
+                    new AggregateException(exception, cleanupException));
+            }
+
+            throw;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or OperationCanceledException)
+        {
+            // A lost response may follow a committed insert. Never delete a possibly valid account's customer.
+            throw new InvalidOperationException(
+                "Chưa xác định được kết quả đăng ký do lỗi kết nối. Hãy thử đăng nhập bằng email và mật khẩu vừa nhập. " +
+                $"Nếu không đăng nhập được, hãy liên hệ quản trị viên kiểm tra khách hàng mã {newId}.", exception);
+        }
+
+        var registeredUser = new AuthenticatedUser(newId.ToString(), normalizedEmail, normalizedName, string.Empty);
+        await SecureStorage.Default.SetAsync("supabase_user", JsonSerializer.Serialize(registeredUser, JsonOptions));
+        currentUser = registeredUser;
         return currentUser;
     }
 
@@ -188,8 +242,12 @@ public sealed class SupabaseService
                 return CryptographicOperations.FixedTimeEquals(derived, expectedHash);
             }
 
-            // Tài khoản đăng ký qua app dùng BCrypt.
-            return BCrypt.Net.BCrypt.Verify(password, storedHash);
+            // Chuỗi BCrypt phải được xác minh, không so sánh như mật khẩu chưa băm.
+            if (storedHash.StartsWith("$2", StringComparison.Ordinal))
+                return BCrypt.Net.BCrypt.Verify(password, storedHash);
+
+            // Tương thích tài khoản cũ có mật khẩu chưa băm; giữ nguyên hoa/thường và khoảng trắng.
+            return string.Equals(password, storedHash, StringComparison.Ordinal);
         }
         catch
         {
@@ -379,16 +437,31 @@ public sealed class SupabaseService
     {
         var config = await configuration;
         var customerId = GetCurrentCustomerId();
-        if (makeDefault)
-            await UpdateAsync(config, $"/rest/v1/diachigiaohang?macdinh=eq.1&id_khachhang=eq.{customerId}", new { macdinh = 0 }, cancellationToken);
-        await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/diachigiaohang", new
+        if (provinceCode <= 0 || wardCode <= 0 || string.IsNullOrWhiteSpace(street))
+            throw new InvalidOperationException("Vui lòng chọn tỉnh/thành, phường/xã và nhập số nhà, tên đường.");
+        var created = await SendJsonReturningAsync<AddressDto>(config, HttpMethod.Post,
+            "/rest/v1/diachigiaohang?select=id_diachi", new
         {
             id_khachhang = customerId,
             tinhthanh = provinceCode,
             phuongxa = wardCode,
             duong = street.Trim(),
-            macdinh = makeDefault ? 1 : 0
+            macdinh = 0
         }, cancellationToken);
+        var addressId = created.FirstOrDefault()?.IdDiaChi
+            ?? throw new InvalidOperationException("Supabase không trả về mã địa chỉ vừa tạo. Hãy tải lại danh sách trước khi thêm lại.");
+        if (makeDefault)
+        {
+            try
+            {
+                await SetDefaultAddressAsync(addressId, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException(
+                    "Địa chỉ đã được thêm nhưng chưa hoàn tất đặt mặc định. Hãy tải lại danh sách và chọn Đặt mặc định.", exception);
+            }
+        }
     }
 
     public async Task DeleteAddressAsync(int addressId, CancellationToken cancellationToken = default)
@@ -415,11 +488,31 @@ public sealed class SupabaseService
     {
         var config = await configuration;
         var customerId = GetCurrentCustomerId();
-        await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/rpc/set_default_address", new
+        var addresses = await GetAddressesAsync(cancellationToken);
+        if (addressId <= 0 || !addresses.Any(address => address.IdDiaChi == addressId && address.IdKhachHang == customerId))
+            throw new InvalidOperationException("Địa chỉ không tồn tại hoặc không thuộc khách hàng hiện tại.");
+
+        // Set the new default first so a rejected request never clears the previous default.
+        var updated = await SendJsonReturningAsync<AddressDto>(config, HttpMethod.Patch,
+            $"/rest/v1/diachigiaohang?id_khachhang=eq.{customerId}&id_diachi=eq.{addressId}&select=id_diachi",
+            new { macdinh = 1 }, cancellationToken);
+        if (!updated.Any(address => address.IdDiaChi == addressId))
+            throw new InvalidOperationException("Không thể cập nhật địa chỉ. Hãy tải lại danh sách và kiểm tra quyền truy cập.");
+        try
         {
-            p_customer_id = customerId,
-            p_address_id = addressId
-        }, cancellationToken);
+            await UpdateAsync(config,
+                $"/rest/v1/diachigiaohang?id_khachhang=eq.{customerId}&id_diachi=neq.{addressId}&macdinh=eq.1",
+                new { macdinh = 0 }, cancellationToken);
+            var saved = await GetAddressesAsync(cancellationToken);
+            if (saved.Count(address => address.MacDinh == 1) != 1 ||
+                !saved.Any(address => address.IdDiaChi == addressId && address.MacDinh == 1))
+                throw new InvalidOperationException("Chưa đồng bộ được địa chỉ mặc định.");
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(
+                "Chưa hoàn tất đổi địa chỉ mặc định. Hãy tải lại danh sách và chọn lại địa chỉ mặc định.", exception);
+        }
     }
 
     public async Task ChangePasswordAsync(string currentPassword, string newPassword, CancellationToken cancellationToken = default)
@@ -444,17 +537,86 @@ public sealed class SupabaseService
         var normalizedFullName = fullName.Trim();
         var normalizedEmail = email.Trim();
         var normalizedPhone = phone.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedFullName) || string.IsNullOrWhiteSpace(normalizedEmail))
+            throw new InvalidOperationException("Họ tên và email không được để trống.");
 
-        await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/rpc/update_customer_profile", new
+        var customer = await FindCustomerByIdAsync(config, customerId, cancellationToken)
+            ?? throw new InvalidOperationException("Không tìm thấy hồ sơ khách hàng hợp lệ.");
+        var accounts = await FetchListAsync<LoginAccountDto>(config,
+            $"/rest/v1/dangnhap?select=tendangnhap,id_khachhang&id_khachhang=eq.{customerId}&loaitaikhoan=eq.KHACHHANG&trangthai=eq.1",
+            cancellationToken);
+        if (accounts.Count != 1 || string.IsNullOrWhiteSpace(accounts[0].TenDangNhap))
+            throw new InvalidOperationException("Không tìm thấy tài khoản khách hàng duy nhất để cập nhật hồ sơ.");
+
+        var encodedEmail = Uri.EscapeDataString(normalizedEmail);
+        var duplicateCustomers = await FetchListAsync<CustomerDto>(config,
+            $"/rest/v1/khachhang?select=id_khachhang&email=eq.{encodedEmail}&id_khachhang=neq.{customerId}&limit=1", cancellationToken);
+        var duplicateAccounts = await FetchListAsync<LoginAccountDto>(config,
+            $"/rest/v1/dangnhap?select=tendangnhap&tendangnhap=eq.{encodedEmail}&loaitaikhoan=eq.KHACHHANG&id_khachhang=neq.{customerId}&limit=1", cancellationToken);
+        if (duplicateCustomers.Count > 0 || duplicateAccounts.Count > 0)
+            throw new InvalidOperationException("Email này đã được đăng ký. Hãy dùng email khác.");
+
+        var oldLogin = accounts[0].TenDangNhap!;
+        var loginChanged = oldLogin != normalizedEmail;
+        var loginPath = $"/rest/v1/dangnhap?id_khachhang=eq.{customerId}&loaitaikhoan=eq.KHACHHANG&trangthai=eq.1";
+        if (loginChanged)
         {
-            p_customer_id = customerId,
-            p_full_name = normalizedFullName,
-            p_email = normalizedEmail,
-            p_phone = normalizedPhone
-        }, cancellationToken);
+            var updatedAccounts = await SendJsonReturningAsync<LoginAccountDto>(config, HttpMethod.Patch,
+                $"{loginPath}&tendangnhap=eq.{Uri.EscapeDataString(oldLogin)}&select=tendangnhap",
+                new { tendangnhap = normalizedEmail }, cancellationToken);
+            if (updatedAccounts.Count != 1)
+                throw new InvalidOperationException("Không thể cập nhật tên đăng nhập. Hãy tải lại hồ sơ và kiểm tra quyền truy cập.");
+        }
 
-        currentUser = currentUser! with { FullName = normalizedFullName, Email = normalizedEmail, Phone = normalizedPhone };
-        await SecureStorage.Default.SetAsync("supabase_user", JsonSerializer.Serialize(currentUser, JsonOptions));
+        IReadOnlyList<CustomerDto> updatedCustomers;
+        try
+        {
+            updatedCustomers = await SendJsonReturningAsync<CustomerDto>(config, HttpMethod.Patch,
+                $"/rest/v1/khachhang?id_khachhang=eq.{customerId}&select=id_khachhang,hoten,email,sdt",
+                new { hoten = normalizedFullName, email = normalizedEmail, sdt = normalizedPhone }, cancellationToken);
+            if (updatedCustomers.Count != 1)
+                throw new InvalidOperationException("Không thể cập nhật hồ sơ. Hãy kiểm tra quyền truy cập bảng khách hàng.");
+        }
+        catch (Exception exception) when (exception is InvalidOperationException ||
+            exception is HttpRequestException { StatusCode: { } status } && (int)status >= 400 && (int)status < 500 && (int)status != 408)
+        {
+            if (loginChanged)
+            {
+                try
+                {
+                    using var cleanupTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    var restored = await SendJsonReturningAsync<LoginAccountDto>(config, HttpMethod.Patch,
+                        $"{loginPath}&tendangnhap=eq.{encodedEmail}&select=tendangnhap",
+                        new { tendangnhap = oldLogin }, cleanupTimeout.Token);
+                    if (restored.Count != 1)
+                        throw new InvalidOperationException("Không khôi phục được tên đăng nhập.");
+                }
+                catch (Exception cleanupException)
+                {
+                    throw new InvalidOperationException(
+                        "Chưa đồng bộ được email và tên đăng nhập. Hãy tải lại hồ sơ hoặc liên hệ quản trị viên.",
+                        new AggregateException(exception, cleanupException));
+                }
+            }
+            throw;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or OperationCanceledException)
+        {
+            throw new InvalidOperationException(
+                "Chưa xác định được kết quả lưu hồ sơ. Hãy đăng nhập lại để tải thông tin mới nhất trước khi thử lại.", exception);
+        }
+
+        var savedCustomer = updatedCustomers[0];
+        if (currentUser?.Id != customerId.ToString())
+            throw new InvalidOperationException("Tài khoản đã thay đổi. Vui lòng đăng nhập lại để tải hồ sơ.");
+        var updatedUser = currentUser with
+        {
+            FullName = savedCustomer.HoTen ?? normalizedFullName,
+            Email = savedCustomer.Email ?? normalizedEmail,
+            Phone = savedCustomer.Sdt ?? normalizedPhone
+        };
+        await SecureStorage.Default.SetAsync("supabase_user", JsonSerializer.Serialize(updatedUser, JsonOptions));
+        currentUser = updatedUser;
     }
 
     public async Task<int> CreateOrderAsync(
@@ -468,6 +630,15 @@ public sealed class SupabaseService
             throw new InvalidOperationException("Thông tin khách hàng không hợp lệ.");
         if (items.Count == 0)
             throw new InvalidOperationException("Giỏ hàng đang trống.");
+
+        foreach (var item in items)
+        {
+            if (item.IdSanPham <= 0 || item.SoLuong <= 0)
+                throw new InvalidOperationException("Sản phẩm hoặc số lượng không hợp lệ.");
+            var stock = await GetAvailableStockAsync(config, item.IdSanPham, cancellationToken);
+            if (stock < item.SoLuong)
+                throw new InvalidOperationException($"Sản phẩm {item.IdSanPham} không còn đủ hàng để đặt.");
+        }
 
         var created = await SendJsonReturningAsync<OrderDto>(config, HttpMethod.Post, "/rest/v1/hoadon?select=id_hoadon", new
         {
@@ -484,20 +655,56 @@ public sealed class SupabaseService
             throw new HttpRequestException("Supabase không trả về mã đơn hàng vừa tạo.");
 
         var orderId = created[0].IdHoadon;
-        foreach (var item in items)
+        try
         {
-            await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/chitiethoadon", new
+            foreach (var item in items)
             {
-                id_sanpham = item.IdSanPham,
-                id_hoadon = orderId,
-                soluong = item.SoLuong,
-                dongia = item.DonGia,
-                thanhtien = item.ThanhTien,
-                id_mactkm = item.IdMaCtkM
-            }, cancellationToken);
+                await SendJsonAsync(config, HttpMethod.Post, "/rest/v1/chitiethoadon", new
+                {
+                    id_sanpham = item.IdSanPham,
+                    id_hoadon = orderId,
+                    soluong = item.SoLuong,
+                    dongia = item.DonGia,
+                    thanhtien = item.ThanhTien,
+                    id_mactkm = item.IdMaCtkM
+                }, cancellationToken);
+                await DecreaseStockAsync(config, item.IdSanPham, item.SoLuong, cancellationToken);
+            }
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(
+                $"Đơn hàng #{orderId} đã được tạo nhưng chưa hoàn tất cập nhật tồn kho. Vui lòng kiểm tra đơn mua và không đặt lại ngay.",
+                exception);
+        }
+        return orderId;
+    }
+
+    private async Task<int> GetAvailableStockAsync(SupabaseConfiguration config, int productId, CancellationToken cancellationToken)
+    {
+        var products = await FetchListAsync<ProductDto>(config,
+            $"/rest/v1/sanpham?select=id_sanpham,soluong&id_sanpham=eq.{productId}&isdeleted=eq.0&trangthai=eq.1&limit=1",
+            cancellationToken);
+        return Math.Max(0, products.FirstOrDefault()?.SoLuong ?? 0);
+    }
+
+    private async Task DecreaseStockAsync(SupabaseConfiguration config, int productId, int quantity, CancellationToken cancellationToken)
+    {
+        // Compare-and-set prevents two clients from overwriting each other's stock updates.
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var stock = await GetAvailableStockAsync(config, productId, cancellationToken);
+            if (stock < quantity)
+                throw new InvalidOperationException($"Sản phẩm {productId} không còn đủ hàng để đặt.");
+
+            var updated = await SendJsonReturningAsync<ProductDto>(config, HttpMethod.Patch,
+                $"/rest/v1/sanpham?id_sanpham=eq.{productId}&soluong=eq.{stock}&isdeleted=eq.0&trangthai=eq.1&select=id_sanpham,soluong",
+                new { soluong = stock - quantity }, cancellationToken);
+            if (updated.Count == 1 && updated[0].SoLuong == stock - quantity)
+                return;
         }
 
-        return orderId;
+        throw new InvalidOperationException($"Tồn kho sản phẩm {productId} vừa thay đổi. Vui lòng kiểm tra lại đơn hàng.");
     }
 
     public async Task<IReadOnlyList<PromotionDto>> GetPromotionsAsync(CancellationToken cancellationToken = default)
@@ -547,14 +754,21 @@ public sealed class SupabaseService
             $"/rest/v1/hoadon?select=id_hoadon,ngaydat,ngaygiao,tongtien,trangthai&id_khachhang=eq.{Uri.EscapeDataString(currentUser.Id)}&order=ngaydat.desc",
             cancellationToken);
 
+        // Fetch details in bounded batches instead of one HTTP request per order.
+        var details = new List<OrderItemDto>();
+        foreach (var orderBatch in orders.Chunk(50))
+        {
+            var ids = string.Join(',', orderBatch.Select(order => order.IdHoadon));
+            details.AddRange(await FetchListAsync<OrderItemDto>(
+                config,
+                $"/rest/v1/chitiethoadon?select=id_hoadon,id_sanpham,soluong,dongia,thanhtien,sanpham(tensanpham)&id_hoadon=in.({ids})",
+                cancellationToken));
+        }
+        var detailsByOrder = details.ToLookup(item => item.IdHoadon);
+
         var result = new List<OrderModel>();
         foreach (var o in orders)
         {
-            var items = await FetchListAsync<OrderItemDto>(
-                config,
-                $"/rest/v1/chitiethoadon?select=id_sanpham,soluong,dongia,thanhtien,sanpham(tensanpham)&id_hoadon=eq.{o.IdHoadon}",
-                cancellationToken);
-
             result.Add(new OrderModel
             {
                 Code = $"MK-{o.IdHoadon:D5}",
@@ -562,9 +776,9 @@ public sealed class SupabaseService
                 Date = o.Ngaydat?.ToString("dd/MM/yyyy") ?? string.Empty,
                 TotalAmount = o.Tongtien ?? 0,
                 Status = o.TrangThai,
-                Items = new ObservableCollection<OrderItemModel>(items.Select(i => new OrderItemModel
+                Items = new ObservableCollection<OrderItemModel>(detailsByOrder[o.IdHoadon].Select(i => new OrderItemModel
                 {
-                    ProductName = i.TenSanPham ?? "Sản phẩm",
+                    ProductName = i.Product?.TenSanPham ?? "Sản phẩm",
                     Quantity = i.SoLuong ?? 0,
                     UnitPrice = i.DonGia ?? 0,
                     TotalPrice = i.ThanhTien ?? 0,
@@ -692,16 +906,22 @@ public sealed class SupabaseService
                 : $"Supabase trả về {(int)response.StatusCode}: {serverMessage}"
         };
 
-        throw new HttpRequestException(message);
+        throw new HttpRequestException(message, null, response.StatusCode);
     }
 
     private sealed class OrderItemDto
     {
+        [JsonPropertyName("id_hoadon")] public int IdHoadon { get; set; }
         [JsonPropertyName("id_sanpham")] public int IdSanPham { get; set; }
-        [JsonPropertyName("tensanpham")] public string? TenSanPham { get; set; }
+        [JsonPropertyName("sanpham")] public OrderProductDto? Product { get; set; }
         [JsonPropertyName("soluong")] public int? SoLuong { get; set; }
         [JsonPropertyName("dongia")] public decimal? DonGia { get; set; }
         [JsonPropertyName("thanhtien")] public decimal? ThanhTien { get; set; }
+    }
+
+    private sealed class OrderProductDto
+    {
+        [JsonPropertyName("tensanpham")] public string? TenSanPham { get; set; }
     }
 
     private sealed class LoaigoDto

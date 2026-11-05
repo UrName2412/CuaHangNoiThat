@@ -26,6 +26,7 @@ public partial class AccountPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+        controller.CancelCheckoutAfterSignIn();
         AuthFormContent.AbortAnimation(nameof(AnimateModeSwitchAsync));
     }
 

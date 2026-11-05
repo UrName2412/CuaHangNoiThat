@@ -9,4 +9,15 @@ public partial class CatalogFilterPage : ContentPage
         InitializeComponent();
         BindingContext = controller;
     }
+
+    protected override bool OnBackButtonPressed()
+    {
+        if (BindingContext is CatalogController controller && controller.IsFilterChoiceOpen)
+        {
+            controller.CloseFilterChoicesCommand.Execute(null);
+            return true;
+        }
+
+        return base.OnBackButtonPressed();
+    }
 }

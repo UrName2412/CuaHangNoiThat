@@ -30,7 +30,6 @@ public partial class ProductDetailPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (productId > 0)
-            await controller.LoadAsync(productId);
+        await controller.LoadAsync(productId);
     }
 }

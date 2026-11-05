@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CuaHangNoiThat.Controls.AppCheckBox"
+             x:Name="Root" WidthRequest="44" HeightRequest="44">
+    <Grid>
+        <Border WidthRequest="24" HeightRequest="24" Stroke="{StaticResource BorderSubtle}"
+                StrokeThickness="2" StrokeShape="RoundRectangle 7" HorizontalOptions="Center" VerticalOptions="Center">
+            <Border.Triggers>
+                <DataTrigger TargetType="Border" Binding="{Binding Source={x:Reference Root}, Path=IsChecked}" Value="True">
+                    <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                    <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                </DataTrigger>
+            </Border.Triggers>
+            <Label Text="✓" IsVisible="{Binding Source={x:Reference Root}, Path=IsChecked}"
+                   TextColor="{StaticResource White}" FontFamily="OpenSansSemibold" FontSize="15"
+                   HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+        </Border>
+        <Button BackgroundColor="Transparent" BorderWidth="0" Padding="0" Clicked="OnToggleClicked"
+                SemanticProperties.Description="{Binding Source={x:Reference Root}, Path=AccessibleName}" />
+    </Grid>
+</ContentView>

@@ -2,7 +2,7 @@
 {
     public partial class AppShell : Shell
     {
-        private bool isResettingAccountStack;
+        private bool isResettingTabStack;
 
         public AppShell()
         {
@@ -17,38 +17,44 @@
             Navigated += OnNavigated;
         }
 
-        private void OnNavigated(object? sender, ShellNavigatedEventArgs args)
+        private async void OnNavigated(object? sender, ShellNavigatedEventArgs args)
         {
-            if (isResettingAccountStack ||
-                CurrentPage is not Views.OrdersPage ||
-                !IsAccountTabSelected() ||
-                IsOpeningOrdersPage(args))
+            if (isResettingTabStack ||
+                args.Source != ShellNavigationSource.ShellSectionChanged ||
+                CurrentItem?.CurrentItem?.Stack.Count <= 1)
                 return;
 
-            isResettingAccountStack = true;
-            _ = ResetAccountStackAsync();
-        }
+            var rootRoute = GetRootRouteToRestore();
+            if (rootRoute is null)
+                return;
 
-        private async Task ResetAccountStackAsync()
-        {
+            isResettingTabStack = true;
             try
             {
-                await Navigation.PopToRootAsync(false);
+                await GoToAsync($"//{rootRoute}", false);
+            }
+            catch (Exception exception)
+            {
+                System.Diagnostics.Debug.WriteLine($"Tab navigation reset failed: {exception}");
             }
             finally
             {
-                isResettingAccountStack = false;
+                isResettingTabStack = false;
             }
         }
 
-        private bool IsAccountTabSelected()
+        private string? GetRootRouteToRestore()
         {
             var selectedContent = CurrentItem?.CurrentItem?.CurrentItem;
-            return selectedContent?.Route.Equals("AccountPage", StringComparison.OrdinalIgnoreCase) == true;
+            if (selectedContent?.Route.Equals("HomePage", StringComparison.OrdinalIgnoreCase) == true)
+                return "HomePage";
+            if (selectedContent?.Route.Equals("CatalogPage", StringComparison.OrdinalIgnoreCase) == true)
+                return "CatalogPage";
+            if (selectedContent?.Route.Equals("CartPage", StringComparison.OrdinalIgnoreCase) == true)
+                return "CartPage";
+            if (selectedContent?.Route.Equals("AccountPage", StringComparison.OrdinalIgnoreCase) == true)
+                return "AccountPage";
+            return null;
         }
-
-        private static bool IsOpeningOrdersPage(ShellNavigatedEventArgs args) =>
-            args.Previous?.Location.OriginalString.Contains("AccountPage", StringComparison.OrdinalIgnoreCase) == true &&
-            args.Current.Location.OriginalString.Contains("OrdersPage", StringComparison.OrdinalIgnoreCase);
     }
 }

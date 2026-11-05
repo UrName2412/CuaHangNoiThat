@@ -11,21 +11,34 @@ public partial class CheckoutController : ObservableObject
 {
     private readonly SupabaseService supabase;
     private readonly CartController cart;
+    private readonly AccountController account;
+    private readonly Dictionary<int, CartItemModel> sourceCartItems = new();
+    private string? loadedCustomerId;
+    private const string CashOnDelivery = "Thanh toán khi nhận hàng (COD)";
 
     public ObservableCollection<CartItemModel> CheckoutItems { get; } = new();
     public string SelectedAddressText => Addresses.FirstOrDefault(a => a.IdDiaChi == SelectedAddressId)?.DisplayAddress
         ?? "Chưa chọn địa chỉ giao hàng";
-    public IReadOnlyList<string> PaymentMethods { get; } = ["Thanh toán khi nhận hàng (COD)", "Ví MoMo (đang thiết lập)"];
-    [ObservableProperty] private string selectedPaymentMethod = "Thanh toán khi nhận hàng (COD)";
-    public bool IsOnlinePayment => SelectedPaymentMethod == "Ví MoMo (đang thiết lập)";
+    public IReadOnlyList<string> PaymentMethods { get; } = [CashOnDelivery];
+    [ObservableProperty] private string selectedPaymentMethod = CashOnDelivery;
+    public bool IsOnlinePayment => SelectedPaymentMethod != CashOnDelivery;
     public string PaymentDescription => IsOnlinePayment
-        ? "MoMo đang được thiết lập. Bạn có thể chọn thanh toán khi nhận hàng để tiếp tục."
+        ? "Phương thức này chưa được hỗ trợ. Vui lòng chọn thanh toán khi nhận hàng để tiếp tục."
         : "Thanh toán cho nhân viên giao hàng khi nhận được sản phẩm.";
     public string PlaceOrderText => IsOnlinePayment ? "Thanh toán online" : "Đặt hàng";
     [ObservableProperty] private bool isOrderCompleted;
     [ObservableProperty] private int completedOrderId;
+    [ObservableProperty] private bool isOrderReady;
     public bool IsCheckoutVisible => !IsOrderCompleted;
-    public bool CanPlaceOrder => !IsBusy && !IsOrderCompleted && HasSelectedAddress && CheckoutItems.Count > 0 && !IsOnlinePayment;
+    public bool CanPlaceOrder => IsOrderReady && !IsBusy && !IsOrderCompleted &&
+        Addresses.Any(address => address.IdDiaChi == SelectedAddressId) && CheckoutItems.Count > 0 && !IsOnlinePayment;
+    public bool CanRetryOrder => !IsOrderReady && !IsBusy && !IsOrderCompleted;
+
+    partial void OnIsOrderReadyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanPlaceOrder));
+        OnPropertyChanged(nameof(CanRetryOrder));
+    }
 
     partial void OnSelectedPaymentMethodChanged(string value)
     {
@@ -39,6 +52,7 @@ public partial class CheckoutController : ObservableObject
     {
         OnPropertyChanged(nameof(IsCheckoutVisible));
         OnPropertyChanged(nameof(CanPlaceOrder));
+        OnPropertyChanged(nameof(CanRetryOrder));
     }
 
     [RelayCommand]
@@ -88,18 +102,30 @@ public partial class CheckoutController : ObservableObject
     private bool isBusy = false;
 
     public bool HasSelectedAddress => SelectedAddressId > 0;
+    public bool HasAddresses => Addresses.Count > 0;
+    public bool HasNoAddresses => Addresses.Count == 0;
     public bool IsNotBusy => !IsBusy;
     public ObservableCollection<AddressDto> Addresses { get; } = new();
+    [ObservableProperty] private bool isAddressPickerOpen;
+    [ObservableProperty] private string addressMessage = string.Empty;
     public ObservableCollection<VoucherDto> EligibleVouchers { get; } = new();
     [ObservableProperty] private VoucherDto? selectedVoucher;
+    [ObservableProperty] private bool isVoucherPickerOpen;
     public bool HasAppliedVoucher => VoucherDiscount > 0 && !string.IsNullOrWhiteSpace(VoucherCode);
+    public bool HasEligibleVouchers => EligibleVouchers.Count > 0;
     public bool HasNoEligibleVouchers => !IsBusy && EligibleVouchers.Count == 0 && string.IsNullOrWhiteSpace(VoucherMessage);
+    public string VoucherPickerText => HasAppliedVoucher
+        ? $"{VoucherCode} · Đã giảm {VoucherDiscount:N0} đ"
+        : EligibleVouchers.Count > 0
+            ? $"Chọn voucher · {EligibleVouchers.Count} mã có sẵn"
+            : "Chọn voucher";
     [ObservableProperty] private string voucherMessage = string.Empty;
 
-    public CheckoutController(SupabaseService supabase, CartController cart)
+    public CheckoutController(SupabaseService supabase, CartController cart, AccountController account)
     {
         this.supabase = supabase;
         this.cart = cart;
+        this.account = account;
         LoadCartData();
         ApplyProfileContact(supabase.CurrentUser);
         OnPropertyChanged(nameof(HasSelectedAddress));
@@ -108,13 +134,17 @@ public partial class CheckoutController : ObservableObject
     private void LoadCartData()
     {
         CheckoutItems.Clear();
+        sourceCartItems.Clear();
         foreach (var item in cart.SelectedItems)
+        {
+            sourceCartItems[item.ProductId] = item;
             CheckoutItems.Add(new CartItemModel
             {
                 ProductId = item.ProductId, ProductName = item.ProductName,
                 Quantity = item.Quantity, UnitPrice = item.UnitPrice,
                 ImageName = item.ImageName, StockAvailable = item.StockAvailable
             });
+        }
         cartTotalAmount = cart.TotalAmount;
         SubtotalAmount = cart.SubtotalAmount;
         ShippingAmount = cart.TotalAmount - cart.SubtotalAmount;
@@ -127,19 +157,46 @@ public partial class CheckoutController : ObservableObject
         if (IsBusy)
             return false;
 
+        IsVoucherPickerOpen = false;
+        IsAddressPickerOpen = false;
+
+        // Shell can reveal the same page after navigating back from the order list.
+        // Keep the receipt visible and never turn a completed order into a new draft.
+        if (IsOrderCompleted && loadedCustomerId == supabase.CurrentUser?.Id)
+            return true;
+
+        var previousAddressId = loadedCustomerId == supabase.CurrentUser?.Id ? SelectedAddressId : 0;
+        if (loadedCustomerId != supabase.CurrentUser?.Id)
+        {
+            IsOrderCompleted = false;
+            CompletedOrderId = 0;
+            ClearVoucherState();
+        }
+
         try
         {
             IsBusy = true;
+            IsOrderReady = false;
+            Addresses.Clear();
+            OnPropertyChanged(nameof(HasAddresses));
+            OnPropertyChanged(nameof(HasNoAddresses));
+            SelectedAddressId = 0;
+            OnPropertyChanged(nameof(SelectedAddressText));
+            ApplyProfileContact(null);
+            CheckoutItems.Clear();
+            sourceCartItems.Clear();
+            TotalAmount = SubtotalAmount = ShippingAmount = cartTotalAmount = 0;
             Message = string.Empty;
-            IsOrderCompleted = false;
             var customer = supabase.CurrentUser ?? await supabase.RestoreSessionAsync();
             if (customer is null)
             {
                 Message = "Vui lòng đăng nhập để tiếp tục thanh toán.";
+                account.RequestCheckoutAfterSignIn();
                 await Shell.Current.GoToAsync("//AccountPage");
                 return false;
             }
 
+            loadedCustomerId = customer.Id;
             ApplyProfileContact(customer);
             LoadCartData();
             if (string.IsNullOrWhiteSpace(VoucherCode))
@@ -152,18 +209,23 @@ public partial class CheckoutController : ObservableObject
             }
 
             var addresses = await supabase.GetAddressesAsync();
-            Addresses.Clear();
+            if (supabase.CurrentUser?.Id != loadedCustomerId)
+                throw new InvalidOperationException("Tài khoản đã thay đổi. Vui lòng tải lại thông tin thanh toán.");
             foreach (var item in addresses)
                 Addresses.Add(item);
+            OnPropertyChanged(nameof(HasAddresses));
+            OnPropertyChanged(nameof(HasNoAddresses));
             OnPropertyChanged(nameof(SelectedAddressText));
             if (addresses.Count == 0)
             {
                 SelectedAddressId = 0;
                 Message = "Chưa có địa chỉ giao hàng. Hãy thêm địa chỉ trước khi đặt hàng.";
             }
-            else if (addresses.All(item => item.IdDiaChi != SelectedAddressId))
+            else
             {
-                SelectedAddressId = addresses.FirstOrDefault(a => a.MacDinh == 1)?.IdDiaChi ?? addresses[0].IdDiaChi;
+                SelectedAddressId = addresses.Any(item => item.IdDiaChi == previousAddressId)
+                    ? previousAddressId
+                    : addresses.FirstOrDefault(a => a.MacDinh == 1)?.IdDiaChi ?? addresses[0].IdDiaChi;
             }
 
             await LoadEligibleVouchersAsync();
@@ -189,15 +251,26 @@ public partial class CheckoutController : ObservableObject
                 }
             }
 
+            if (supabase.CurrentUser?.Id != loadedCustomerId)
+                throw new InvalidOperationException("Tài khoản đã thay đổi. Vui lòng tải lại thông tin thanh toán.");
+
             TotalAmount = Math.Max(0, cartTotalAmount - VoucherDiscount);
             SyncSelectedVoucher();
             OnPropertyChanged(nameof(HasAppliedVoucher));
             OnPropertyChanged(nameof(TotalAmount));
             OnPropertyChanged(nameof(Message));
+            IsOrderReady = true;
             return true;
         }
         catch (Exception ex)
         {
+            Addresses.Clear();
+            OnPropertyChanged(nameof(HasAddresses));
+            OnPropertyChanged(nameof(HasNoAddresses));
+            SelectedAddressId = 0;
+            OnPropertyChanged(nameof(SelectedAddressText));
+            if (supabase.CurrentUser?.Id != loadedCustomerId)
+                ApplyProfileContact(null);
             Message = ex.Message;
             OnPropertyChanged(nameof(Message));
             return false;
@@ -209,16 +282,61 @@ public partial class CheckoutController : ObservableObject
     }
 
     [RelayCommand]
-    private Task SetAddress() => Shell.Current.GoToAsync("AddressPage");
+    private Task RefreshOrderAsync() => LoadOrderAsync();
+
+    [RelayCommand]
+    private Task SetAddress()
+    {
+        IsAddressPickerOpen = false;
+        return Shell.Current.GoToAsync("AddressPage");
+    }
 
     [RelayCommand]
     private Task OpenProfileAsync() => Shell.Current.GoToAsync("ProfilePage");
 
     [RelayCommand]
+    private void OpenAddressPicker()
+    {
+        if (IsBusy || IsOrderCompleted)
+            return;
+
+        AddressMessage = string.Empty;
+        IsVoucherPickerOpen = false;
+        IsAddressPickerOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseAddressPicker()
+    {
+        if (!IsBusy)
+            IsAddressPickerOpen = false;
+    }
+
+    [RelayCommand]
     private void SelectAddress(AddressDto address)
     {
         if (!IsBusy && address is not null && Addresses.Contains(address))
+        {
             SelectedAddressId = address.IdDiaChi;
+            IsAddressPickerOpen = false;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenVoucherPicker()
+    {
+        if (!IsBusy && !IsOrderCompleted)
+        {
+            IsAddressPickerOpen = false;
+            IsVoucherPickerOpen = true;
+        }
+    }
+
+    [RelayCommand]
+    private void CloseVoucherPicker()
+    {
+        if (!IsBusy)
+            IsVoucherPickerOpen = false;
     }
 
     [RelayCommand]
@@ -231,11 +349,15 @@ public partial class CheckoutController : ObservableObject
             return;
 
         if (voucher.IdVoucher == VoucherCode && VoucherDiscount > 0)
+        {
+            IsVoucherPickerOpen = false;
             return;
+        }
 
         try
         {
             IsBusy = true;
+            VoucherMessage = string.Empty;
             var discount = await supabase.ApplyVoucherAsync(voucher.IdVoucher, SubtotalAmount);
             VoucherCode = discount > 0 ? voucher.IdVoucher : string.Empty;
             VoucherDiscount = discount;
@@ -243,12 +365,17 @@ public partial class CheckoutController : ObservableObject
             Message = VoucherDiscount > 0
                 ? $"Đã giảm {VoucherDiscount:N0}đ."
                 : "Mã giảm giá không hợp lệ hoặc đã hết lượt.";
+            if (VoucherDiscount > 0)
+                IsVoucherPickerOpen = false;
+            else
+                VoucherMessage = Message;
         }
         catch (Exception exception)
         {
             ClearVoucherState();
             TotalAmount = cartTotalAmount;
             Message = $"Không thể áp dụng voucher: {exception.Message}";
+            VoucherMessage = Message;
         }
         finally
         {
@@ -282,8 +409,10 @@ public partial class CheckoutController : ObservableObject
         }
 
         SyncSelectedVoucher();
+        OnPropertyChanged(nameof(HasEligibleVouchers));
         OnPropertyChanged(nameof(HasNoEligibleVouchers));
         OnPropertyChanged(nameof(HasAppliedVoucher));
+        OnPropertyChanged(nameof(VoucherPickerText));
     }
 
     [RelayCommand]
@@ -315,6 +444,8 @@ public partial class CheckoutController : ObservableObject
             IsBusy = true;
             await supabase.DeleteAddressAsync(address.IdDiaChi);
             Addresses.Remove(address);
+            OnPropertyChanged(nameof(HasAddresses));
+            OnPropertyChanged(nameof(HasNoAddresses));
             if (SelectedAddressId == address.IdDiaChi)
                 SelectedAddressId = Addresses.FirstOrDefault()?.IdDiaChi ?? 0;
             OnPropertyChanged(nameof(HasSelectedAddress));
@@ -322,6 +453,7 @@ public partial class CheckoutController : ObservableObject
         catch (Exception exception)
         {
             Message = $"Không thể xóa địa chỉ: {exception.Message}";
+            AddressMessage = Message;
         }
         finally
         {
@@ -334,6 +466,13 @@ public partial class CheckoutController : ObservableObject
     {
         if (IsBusy || IsOrderCompleted)
             return;
+
+        if (!IsOrderReady || loadedCustomerId != supabase.CurrentUser?.Id)
+        {
+            IsOrderReady = false;
+            Message = "Thông tin thanh toán chưa được xác nhận. Vui lòng tải lại trước khi đặt hàng.";
+            return;
+        }
 
         if (IsOnlinePayment)
         {
@@ -421,7 +560,8 @@ public partial class CheckoutController : ObservableObject
             CompletedOrderId = await supabase.CreateOrderAsync(orderDto, orderItems);
 
             foreach (var purchased in CheckoutItems)
-                cart.RemoveItem(purchased.ProductId);
+                if (sourceCartItems.TryGetValue(purchased.ProductId, out var source))
+                    cart.RemovePurchasedQuantity(source, purchased.Quantity);
             ClearVoucherState();
             SelectedAddressId = 0;
             IsOrderCompleted = true;
@@ -446,6 +586,7 @@ public partial class CheckoutController : ObservableObject
         OnPropertyChanged(nameof(IsNotBusy));
         OnPropertyChanged(nameof(HasNoEligibleVouchers));
         OnPropertyChanged(nameof(CanPlaceOrder));
+        OnPropertyChanged(nameof(CanRetryOrder));
     }
 
     partial void OnSelectedAddressIdChanged(int value)
@@ -462,14 +603,18 @@ public partial class CheckoutController : ObservableObject
         Phone = customer?.Phone ?? string.Empty;
     }
 
-    private void SyncSelectedVoucher() =>
+    private void SyncSelectedVoucher()
+    {
         SelectedVoucher = EligibleVouchers.FirstOrDefault(item => item.IdVoucher == VoucherCode);
+        OnPropertyChanged(nameof(VoucherPickerText));
+    }
 
     private void ClearVoucherState()
     {
         VoucherCode = string.Empty;
         SelectedVoucher = null;
         VoucherDiscount = 0;
+        OnPropertyChanged(nameof(VoucherPickerText));
     }
 
     private static bool IsValidEmail(string value)

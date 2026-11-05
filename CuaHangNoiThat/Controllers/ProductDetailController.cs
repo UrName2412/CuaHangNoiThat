@@ -9,6 +9,7 @@ public partial class ProductDetailController : ObservableObject
 {
     private readonly SupabaseService supabase;
     private readonly CartController cart;
+    private int requestedProductId;
 
     [ObservableProperty]
     private FurnitureItem? product;
@@ -19,7 +20,13 @@ public partial class ProductDetailController : ObservableObject
     [ObservableProperty]
     private string errorMessage = string.Empty;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCartMessage))]
+    private string cartMessage = string.Empty;
+
     public bool HasProduct => Product is not null;
+    public bool HasCartMessage => !string.IsNullOrWhiteSpace(CartMessage);
+    public bool CanAddToCart => !IsBusy && Product?.IsInStock == true;
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
     public bool IsNotBusy => !IsBusy;
 
@@ -30,11 +37,30 @@ public partial class ProductDetailController : ObservableObject
     }
 
     partial void OnErrorMessageChanged(string value) => OnPropertyChanged(nameof(HasError));
+    partial void OnProductChanged(FurnitureItem? value)
+    {
+        OnPropertyChanged(nameof(HasProduct));
+        OnPropertyChanged(nameof(CanAddToCart));
+    }
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsNotBusy));
+        OnPropertyChanged(nameof(CanAddToCart));
+    }
 
     public async Task LoadAsync(int id)
     {
-        if (IsBusy || id <= 0)
+        if (IsBusy)
             return;
+
+        requestedProductId = id;
+        CartMessage = string.Empty;
+        Product = null;
+        if (id <= 0)
+        {
+            ErrorMessage = "Thông tin sản phẩm không hợp lệ. Vui lòng quay lại danh sách sản phẩm.";
+            return;
+        }
 
         try
         {
@@ -58,12 +84,15 @@ public partial class ProductDetailController : ObservableObject
     }
 
     [RelayCommand]
+    private Task RetryAsync() => LoadAsync(requestedProductId);
+
+    [RelayCommand]
     private void AddToCart()
     {
-        if (Product is null || Product.StockAvailable <= 0)
+        if (!CanAddToCart || Product is null)
             return;
 
-        cart.AddItem(new CartItemModel
+        CartMessage = cart.AddItem(new CartItemModel
         {
             ProductId = Product.IdSanPham,
             ProductName = Product.Name,

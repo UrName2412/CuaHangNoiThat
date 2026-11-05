@@ -8,8 +8,12 @@ using CuaHangNoiThat.Services;
 
 namespace CuaHangNoiThat.Controllers;
 
+public sealed record FilterChoice(string Label, bool IsSelected, ProductFilterOption? Option = null, string? SortOrder = null);
+
 public partial class CatalogController : ObservableObject
 {
+    private enum FilterChoiceKind { ProductType, WoodType, SortOrder }
+    private FilterChoiceKind filterChoiceKind;
     private readonly SupabaseService supabase;
     private readonly CartController cart;
     private List<FurnitureItem> allItems = [];
@@ -33,6 +37,18 @@ public partial class CatalogController : ObservableObject
     [ObservableProperty] private bool draftDiscountedOnly;
     [ObservableProperty] private string draftSortOrder = "Mặc định";
     [ObservableProperty] private string filterMessage = string.Empty;
+    public bool HasFilterMessage => !string.IsNullOrWhiteSpace(FilterMessage);
+    partial void OnFilterMessageChanged(string value) => OnPropertyChanged(nameof(HasFilterMessage));
+    [ObservableProperty] private bool isFilterChoiceOpen;
+    [ObservableProperty] private string filterChoiceTitle = string.Empty;
+    public ObservableCollection<FilterChoice> FilterChoices { get; } = new();
+    public string DraftProductTypeName => DraftProductType?.Name ?? AllProductTypes.Name;
+    public string DraftWoodTypeName => DraftWoodType?.Name ?? AllWoodTypes.Name;
+    public string DraftSortOrderName => DraftSortOrder;
+
+    partial void OnDraftProductTypeChanged(ProductFilterOption? value) => OnPropertyChanged(nameof(DraftProductTypeName));
+    partial void OnDraftWoodTypeChanged(ProductFilterOption? value) => OnPropertyChanged(nameof(DraftWoodTypeName));
+    partial void OnDraftSortOrderChanged(string value) => OnPropertyChanged(nameof(DraftSortOrderName));
     public int ActiveFilterCount => (productTypeFilter.Id.HasValue ? 1 : 0) + (woodTypeFilter.Id.HasValue ? 1 : 0)
         + (minimumPrice.HasValue || maximumPrice.HasValue ? 1 : 0) + (inStockOnly ? 1 : 0)
         + (discountedOnly ? 1 : 0) + (sortOrder != "Mặc định" ? 1 : 0);
@@ -63,6 +79,12 @@ public partial class CatalogController : ObservableObject
     [ObservableProperty]
     private string errorMessage = string.Empty;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCartMessage))]
+    private string cartMessage = string.Empty;
+
+    public bool HasCartMessage => !string.IsNullOrWhiteSpace(CartMessage);
+
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
     public bool IsNotBusy => !IsBusy;
@@ -81,9 +103,13 @@ public partial class CatalogController : ObservableObject
 
     public async Task LoadAsync()
     {
+        if (IsBusy)
+            return;
+
         try
         {
             IsBusy = true;
+            CartMessage = string.Empty;
             ErrorMessage = string.Empty;
             OnPropertyChanged(nameof(HasError));
             allItems = (await supabase.GetProductsAsync()).ToList();
@@ -96,14 +122,17 @@ public partial class CatalogController : ObservableObject
         }
         catch (InvalidOperationException exception)
         {
+            ClearFailedLoad();
             ErrorMessage = exception.Message;
         }
         catch (HttpRequestException exception)
         {
+            ClearFailedLoad();
             ErrorMessage = $"Không thể tải sản phẩm: {exception.Message}";
         }
         catch (Exception exception)
         {
+            ClearFailedLoad();
             ErrorMessage = $"Không thể tải sản phẩm: {exception.Message}";
         }
         finally
@@ -113,6 +142,19 @@ public partial class CatalogController : ObservableObject
             OnPropertyChanged(nameof(IsNotBusy));
         }
     }
+
+    private void ClearFailedLoad()
+    {
+        // Old inventory must not remain actionable after a failed refresh.
+        allItems.Clear();
+        Items.Clear();
+        Categories.Clear();
+        Categories.Add("Tất cả");
+        OnPropertyChanged(nameof(ShowEmptyState));
+    }
+
+    [RelayCommand]
+    private Task RefreshAsync() => LoadAsync();
 
     partial void OnSelectedCategoryChanged(string value) => FilterItems();
     partial void OnSearchTextChanged(string value) => FilterItems();
@@ -167,8 +209,65 @@ public partial class CatalogController : ObservableObject
     private Task CloseFiltersAsync() => Shell.Current.Navigation.PopModalAsync();
 
     [RelayCommand]
+    private void OpenProductTypeChoices() => OpenFilterChoices(FilterChoiceKind.ProductType, "Loại sản phẩm");
+
+    [RelayCommand]
+    private void OpenWoodTypeChoices() => OpenFilterChoices(FilterChoiceKind.WoodType, "Loại gỗ");
+
+    [RelayCommand]
+    private void OpenSortChoices() => OpenFilterChoices(FilterChoiceKind.SortOrder, "Sắp xếp theo");
+
+    private void OpenFilterChoices(FilterChoiceKind kind, string title)
+    {
+        filterChoiceKind = kind;
+        FilterChoiceTitle = title;
+        FilterChoices.Clear();
+        switch (kind)
+        {
+            case FilterChoiceKind.ProductType:
+                foreach (var option in ProductTypeOptions)
+                    FilterChoices.Add(new FilterChoice(option.Name, option == DraftProductType, Option: option));
+                break;
+            case FilterChoiceKind.WoodType:
+                foreach (var option in WoodTypeOptions)
+                    FilterChoices.Add(new FilterChoice(option.Name, option == DraftWoodType, Option: option));
+                break;
+            case FilterChoiceKind.SortOrder:
+                foreach (var option in SortOptions)
+                    FilterChoices.Add(new FilterChoice(option, option == DraftSortOrder, SortOrder: option));
+                break;
+        }
+        IsFilterChoiceOpen = true;
+    }
+
+    [RelayCommand]
+    private void SelectFilterChoice(FilterChoice? choice)
+    {
+        if (!IsFilterChoiceOpen || choice is null || !FilterChoices.Contains(choice))
+            return;
+
+        switch (filterChoiceKind)
+        {
+            case FilterChoiceKind.ProductType:
+                DraftProductType = choice.Option;
+                break;
+            case FilterChoiceKind.WoodType:
+                DraftWoodType = choice.Option;
+                break;
+            case FilterChoiceKind.SortOrder:
+                DraftSortOrder = choice.SortOrder ?? "Mặc định";
+                break;
+        }
+        IsFilterChoiceOpen = false;
+    }
+
+    [RelayCommand]
+    private void CloseFilterChoices() => IsFilterChoiceOpen = false;
+
+    [RelayCommand]
     private void ResetFilterDraft()
     {
+        IsFilterChoiceOpen = false;
         DraftProductType = AllProductTypes;
         DraftWoodType = AllWoodTypes;
         MinimumPriceInput = MaximumPriceInput = FilterMessage = string.Empty;
@@ -179,6 +278,7 @@ public partial class CatalogController : ObservableObject
     [RelayCommand]
     private async Task ApplyFiltersAsync()
     {
+        IsFilterChoiceOpen = false;
         if (!TryReadPrice(MinimumPriceInput, out var min) || !TryReadPrice(MaximumPriceInput, out var max))
         {
             FilterMessage = "Giá phải là số nguyên VND không âm, ví dụ 5000000 hoặc 5.000.000.";
@@ -266,7 +366,7 @@ public partial class CatalogController : ObservableObject
     {
         if (item.StockAvailable <= 0)
             return;
-        cart.AddItem(new CartItemModel
+        CartMessage = cart.AddItem(new CartItemModel
         {
             ProductId = item.IdSanPham,
             ProductName = item.Name,

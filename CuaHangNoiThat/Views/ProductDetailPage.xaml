@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
+             xmlns:controls="clr-namespace:CuaHangNoiThat.Controls"
              x:Class="CuaHangNoiThat.Views.ProductDetailPage"
              x:DataType="controllers:ProductDetailController"
              Title="Chi tiết sản phẩm"
@@ -10,21 +11,10 @@
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Spacing="0">
                 <Border Margin="16,16,16,0"
-                        HeightRequest="320"
                         BackgroundColor="{StaticResource Secondary}"
                         StrokeThickness="0"
                         StrokeShape="RoundRectangle 20">
-                    <Grid>
-                        <Label Text="▧"
-                               FontSize="88"
-                               TextColor="{StaticResource Primary}"
-                               HorizontalTextAlignment="Center"
-                               VerticalTextAlignment="Center"
-                               AutomationProperties.IsInAccessibleTree="False" />
-                        <Image Source="{Binding Product.ImageName}"
-                               Aspect="AspectFit"
-                               SemanticProperties.Description="{Binding Product.Name, StringFormat='Ảnh {0}'}" />
-                    </Grid>
+                    <controls:ProductImageView Url="{Binding Product.ImageName}" AccessibleName="{Binding Product.Name}" />
                 </Border>
 
                 <ActivityIndicator IsVisible="{Binding IsBusy}"
@@ -84,10 +74,13 @@
                         BackgroundColor="{StaticResource Surface}"
                         Stroke="{StaticResource BorderSubtle}"
                         StrokeShape="RoundRectangle 12">
+                    <VerticalStackLayout Spacing="10">
                     <Label Text="{Binding ErrorMessage}"
                            Style="{StaticResource BodyText}"
                            TextColor="{StaticResource Danger}"
                            HorizontalTextAlignment="Center" />
+                    <Button Text="Thử lại" Command="{Binding RetryCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" />
+                    </VerticalStackLayout>
                 </Border>
             </VerticalStackLayout>
         </ScrollView>
@@ -96,12 +89,15 @@
                 BackgroundColor="{StaticResource Surface}"
                 StrokeThickness="0"
                 Padding="16,12">
+            <VerticalStackLayout Spacing="8">
+            <Label Text="{Binding CartMessage}" IsVisible="{Binding HasCartMessage}" Style="{StaticResource Caption}" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" />
             <Button Text="THÊM VÀO GIỎ HÀNG  →"
                     Style="{StaticResource PrimaryButton}"
                     Command="{Binding AddToCartCommand}"
-                    IsEnabled="{Binding Product.IsInStock}"
-                    HeightRequest="52"
+                    IsEnabled="{Binding CanAddToCart}"
+                    MinimumHeightRequest="52"
                     SemanticProperties.Hint="Thêm sản phẩm này vào giỏ hàng" />
+            </VerticalStackLayout>
         </Border>
     </Grid>
 </ContentPage>

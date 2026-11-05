@@ -19,4 +19,10 @@ public partial class ProfilePage : ContentPage
         base.OnAppearing();
         controller.Load();
     }
+
+    protected override void OnDisappearing()
+    {
+        controller.ClearPasswords();
+        base.OnDisappearing();
+    }
 }

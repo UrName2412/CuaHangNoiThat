@@ -20,6 +20,12 @@ namespace CuaHangNoiThat
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
+#if ANDROID
+            // Inputs already sit inside app-styled surfaces; hide Android's extra underline.
+            Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("MokhaEntrySurface", (handler, _) =>
+                handler.PlatformView.BackgroundTintList = Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent));
+#endif
+
 #if MAUI_DEVFLOW
             builder.AddMauiDevFlowAgent();
 #endif
@@ -27,12 +33,17 @@ namespace CuaHangNoiThat
             builder.Services.AddSingleton<Controllers.HomeController>();
             builder.Services.AddSingleton<Controllers.CatalogController>();
             builder.Services.AddSingleton<Controllers.CartController>();
-            builder.Services.AddSingleton<Controllers.OrdersController>();
+            builder.Services.AddTransient<Controllers.OrdersController>();
             builder.Services.AddSingleton<Controllers.AccountController>();
-            builder.Services.AddSingleton<Controllers.ProfileController>();
-            builder.Services.AddSingleton<Controllers.CheckoutController>();
-            builder.Services.AddSingleton<Controllers.AddressController>();
-            builder.Services.AddSingleton<Controllers.PromotionController>();
+            builder.Services.AddTransient<Controllers.ProfileController>();
+            // Each checkout visit owns its order result and address/voucher selection.
+            builder.Services.AddTransient<Controllers.CheckoutController>();
+            builder.Services.AddTransient<Controllers.AddressController>();
+            builder.Services.AddSingleton(sp => new ProvinceService(new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(20)
+            }));
+            builder.Services.AddTransient<Controllers.PromotionController>();
             builder.Services.AddTransient<Controllers.ProductDetailController>();
             builder.Services.AddSingleton(sp => new SupabaseService(new HttpClient
             {

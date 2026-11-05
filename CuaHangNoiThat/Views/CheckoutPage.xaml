@@ -16,12 +16,6 @@
                     <Label Text="Kiểm tra thông tin trước khi hoàn tất đơn hàng." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
                 </VerticalStackLayout>
 
-                <Border Style="{StaticResource Card}" Padding="16">
-                    <VerticalStackLayout Spacing="8">
-                        <Label Text="Giao đến" Style="{StaticResource Eyebrow}" />
-                        <Label Text="{Binding SelectedAddressText}" Style="{StaticResource CardTitle}" />
-                    </VerticalStackLayout>
-                </Border>
                 <VerticalStackLayout Spacing="12">
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Text="Thông tin liên hệ" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center" />
@@ -38,41 +32,19 @@
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <Label Text="Địa chỉ giao hàng" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center" />
-                        <Button Grid.Column="1" Text="Quản lý" Command="{Binding SetAddressCommand}" Style="{StaticResource SecondaryButton}" FontSize="12" Padding="14,0" />
-                    </Grid>
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Addresses}" Spacing="8">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="models:AddressDto">
-                                <Border BackgroundColor="{StaticResource Surface}"
-                                        Stroke="{StaticResource BorderSubtle}"
-                                        StrokeShape="RoundRectangle 16"
-                                        Padding="14"
-                                        SemanticProperties.Description="{Binding DisplayAddress}"
-                                        SemanticProperties.Hint="Chọn địa chỉ giao hàng">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectAddressCommand}" CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-                                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="8">
-                                        <Label Text="{Binding DisplayAddress}" Style="{StaticResource BodyText}" />
-                                        <Label Grid.Column="1" Text="Mặc định" IsVisible="{Binding IsDefault}" Style="{StaticResource Eyebrow}" VerticalTextAlignment="Center" />
-                                        <Button Grid.Row="1" Text="Xóa địa chỉ"
-                                                Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.DeleteAddressCommand}"
-                                                CommandParameter="{Binding .}"
-                                                BackgroundColor="Transparent"
-                                                TextColor="{StaticResource Danger}"
-                                                FontFamily="OpenSansSemibold"
-                                                FontSize="12"
-                                                HorizontalOptions="Start"
-                                                HeightRequest="44"
-                                                Padding="0,4" />
-                                        <Button Grid.Row="1" Grid.Column="1" Text="Chọn địa chỉ" Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectAddressCommand}" CommandParameter="{Binding .}" Style="{StaticResource SecondaryButton}" FontSize="12" Padding="10,0" SemanticProperties.Description="{Binding DisplayAddress, StringFormat='Chọn địa chỉ {0}'}" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </VerticalStackLayout>
+                    <Label Text="Địa chỉ giao hàng" Style="{StaticResource SectionTitle}" />
+                    <Border Style="{StaticResource Card}" Padding="14,4">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" MinimumHeightRequest="52">
+                            <VerticalStackLayout Spacing="3" VerticalOptions="Center">
+                                <Label Text="Giao đến" Style="{StaticResource Eyebrow}" />
+                                <Label Text="{Binding SelectedAddressText}" Style="{StaticResource BodyText}" MaxLines="2" LineBreakMode="TailTruncation" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="›" Style="{StaticResource BodyText}" FontSize="24" TextColor="{StaticResource Primary}" VerticalTextAlignment="Center" />
+                            <Button Grid.ColumnSpan="2" Command="{Binding OpenAddressPickerCommand}" IsEnabled="{Binding IsNotBusy}"
+                                    BackgroundColor="Transparent" BorderWidth="0" SemanticProperties.Description="{Binding SelectedAddressText}"
+                                    SemanticProperties.Hint="Mở danh sách địa chỉ giao hàng" />
+                        </Grid>
+                    </Border>
                 </VerticalStackLayout>
 
                 <Border Style="{StaticResource Card}" Padding="16">
@@ -96,34 +68,16 @@
                     </VerticalStackLayout>
                 </Border>
                 <VerticalStackLayout Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <Label Text="Chọn voucher" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center" />
-                        <Button Grid.Column="1" Text="Tải lại" Command="{Binding RefreshVouchersCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" FontSize="12" Padding="12,0" />
-                    </Grid>
-                    <Label Text="Chạm một mã để áp dụng. Danh sách không tự chọn hộ." Style="{StaticResource Caption}" />
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding EligibleVouchers}" Spacing="8">
-                        <BindableLayout.ItemTemplate>
-                            <DataTemplate x:DataType="models:VoucherDto">
-                                <Border Style="{StaticResource Card}" Padding="14">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectVoucherCommand}" CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <Label Text="{Binding SelectionLabel}" Style="{StaticResource BodyText}" VerticalTextAlignment="Center" />
-                                        <Button Grid.Column="1"
-                                                Text="Dùng mã"
-                                                Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectVoucherCommand}"
-                                                CommandParameter="{Binding .}"
-                                                IsEnabled="{Binding Source={x:Reference PageRoot}, Path=BindingContext.IsNotBusy}"
-                                                Style="{StaticResource SecondaryButton}"
-                                                FontSize="12"
-                                                Padding="10,0"
-                                                SemanticProperties.Description="{Binding SelectionLabel, StringFormat='Áp dụng {0}'}" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </VerticalStackLayout>
+                    <Label Text="Voucher" Style="{StaticResource SectionTitle}" />
+                    <Border Style="{StaticResource Card}" Padding="14,4">
+                        <Grid ColumnDefinitions="*,Auto" HeightRequest="48">
+                            <Label Text="{Binding VoucherPickerText}" Style="{StaticResource BodyText}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="›" Style="{StaticResource BodyText}" FontSize="24" TextColor="{StaticResource Primary}" VerticalTextAlignment="Center" />
+                            <Button Grid.ColumnSpan="2" Command="{Binding OpenVoucherPickerCommand}" IsEnabled="{Binding IsNotBusy}"
+                                    BackgroundColor="Transparent" BorderWidth="0" SemanticProperties.Description="{Binding VoucherPickerText}"
+                                    SemanticProperties.Hint="Mở danh sách voucher có sẵn" />
+                        </Grid>
+                    </Border>
                     <Border IsVisible="{Binding HasAppliedVoucher}" Style="{StaticResource Card}" Padding="12">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                             <VerticalStackLayout Spacing="4">
@@ -134,14 +88,20 @@
                             <Button Grid.Column="1" Text="Bỏ chọn" Command="{Binding RemoveVoucherCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" FontSize="12" Padding="12,0" />
                         </Grid>
                     </Border>
-                    <Label IsVisible="{Binding HasNoEligibleVouchers}" Text="Chưa có voucher phù hợp với đơn hàng này." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
-                    <Label Text="{Binding VoucherMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Danger}" />
                 </VerticalStackLayout>
 
                 <Border Style="{StaticResource Card}" Padding="16">
                     <VerticalStackLayout Spacing="8">
                         <Label Text="Phương thức thanh toán" Style="{StaticResource SectionTitle}" />
-                        <Picker ItemsSource="{Binding PaymentMethods}" SelectedItem="{Binding SelectedPaymentMethod}" IsEnabled="{Binding IsNotBusy}" Title="Chọn phương thức thanh toán" />
+                        <Border BackgroundColor="{StaticResource Secondary}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="14,12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <VerticalStackLayout Spacing="3">
+                                    <Label Text="Thanh toán khi nhận hàng" Style="{StaticResource CardTitle}" />
+                                    <Label Text="COD · Thanh toán khi đơn hàng được giao" Style="{StaticResource Caption}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1" Text="✓" TextColor="{StaticResource Primary}" FontSize="20" VerticalTextAlignment="Center" />
+                            </Grid>
+                        </Border>
                         <Label Text="{Binding PaymentDescription}" Style="{StaticResource Caption}" />
                     </VerticalStackLayout>
                 </Border>
@@ -157,6 +117,7 @@
                     </HorizontalStackLayout>
                 </Border>
                 <Label Text="{Binding Message}" Style="{StaticResource BodyText}" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" />
+                <Button Text="Tải lại thông tin thanh toán" IsVisible="{Binding CanRetryOrder}" Command="{Binding RefreshOrderCommand}" Style="{StaticResource SecondaryButton}" />
                 <Border BackgroundColor="{StaticResource Surface}" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 16" Padding="16" Margin="0,0,0,4">
             <VerticalStackLayout Spacing="10">
                 <Label Text="Tóm tắt thanh toán" Style="{StaticResource SectionTitle}" />
@@ -196,5 +157,84 @@
             <Button Text="Tiếp tục mua sắm" Command="{Binding ContinueShoppingCommand}" Style="{StaticResource SecondaryButton}" />
         </VerticalStackLayout>
     </ScrollView>
+    <Grid Grid.RowSpan="2" IsVisible="{Binding IsAddressPickerOpen}" BackgroundColor="#80000000" VerticalOptions="Fill" HorizontalOptions="Fill">
+        <Border BackgroundColor="{StaticResource PageBackground}" StrokeThickness="0" StrokeShape="RoundRectangle 22,22,0,0" VerticalOptions="End" Padding="20,18,20,24">
+            <VerticalStackLayout Spacing="14">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <VerticalStackLayout Spacing="3" VerticalOptions="Center">
+                        <Label Text="Chọn địa chỉ giao hàng" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Chọn nơi nhận hàng cho đơn này." Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1" Text="Đóng" Command="{Binding CloseAddressPickerCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" FontSize="12" Padding="12,0" />
+                </Grid>
+                <CollectionView ItemsSource="{Binding Addresses}" IsVisible="{Binding HasAddresses}" SelectionMode="None" HeightRequest="300">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:AddressDto">
+                            <Border Style="{StaticResource Card}" Padding="14" Margin="0,0,0,8">
+                                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8" RowSpacing="8">
+                                    <Label Text="{Binding DisplayAddress}" Style="{StaticResource BodyText}" />
+                                    <Label Grid.Column="1" Text="Mặc định" IsVisible="{Binding IsDefault}" Style="{StaticResource Eyebrow}" VerticalTextAlignment="Center" />
+                                    <Button Grid.Row="1" Text="Xóa địa chỉ"
+                                            Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.DeleteAddressCommand}"
+                                            CommandParameter="{Binding .}"
+                                            IsEnabled="{Binding Source={x:Reference PageRoot}, Path=BindingContext.IsNotBusy}"
+                                            BackgroundColor="Transparent" TextColor="{StaticResource Danger}"
+                                            FontFamily="OpenSansSemibold" FontSize="12" HorizontalOptions="Start" Padding="0,4" />
+                                    <Button Grid.Row="1" Grid.Column="1" Text="Chọn địa chỉ"
+                                            Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectAddressCommand}"
+                                            CommandParameter="{Binding .}"
+                                            IsEnabled="{Binding Source={x:Reference PageRoot}, Path=BindingContext.IsNotBusy}"
+                                            Style="{StaticResource SecondaryButton}" FontSize="12" Padding="10,0"
+                                            SemanticProperties.Description="{Binding DisplayAddress, StringFormat='Chọn địa chỉ {0}'}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="{StaticResource Primary}" />
+                <Label IsVisible="{Binding HasNoAddresses}" Text="Chưa có địa chỉ giao hàng. Hãy thêm địa chỉ để tiếp tục." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
+                <Label Text="{Binding AddressMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Danger}" />
+                <Button Text="Thêm hoặc quản lý địa chỉ" Command="{Binding SetAddressCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+    <Grid Grid.RowSpan="2" IsVisible="{Binding IsVoucherPickerOpen}" BackgroundColor="#80000000" VerticalOptions="Fill" HorizontalOptions="Fill">
+        <Border BackgroundColor="{StaticResource PageBackground}" StrokeThickness="0" StrokeShape="RoundRectangle 22,22,0,0" VerticalOptions="End" Padding="20,18,20,24">
+            <VerticalStackLayout Spacing="14">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <VerticalStackLayout Spacing="3" VerticalOptions="Center">
+                        <Label Text="Chọn voucher" Style="{StaticResource SectionTitle}" />
+                        <Label Text="Chạm một mã để áp dụng cho đơn hàng." Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1" Text="Đóng" Command="{Binding CloseVoucherPickerCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" FontSize="12" Padding="12,0" />
+                </Grid>
+                <Button Text="Tải lại voucher" Command="{Binding RefreshVouchersCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" FontSize="12" HorizontalOptions="End" Padding="12,0" />
+                <CollectionView ItemsSource="{Binding EligibleVouchers}" IsVisible="{Binding HasEligibleVouchers}" SelectionMode="None" HeightRequest="300">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:VoucherDto">
+                            <Border Style="{StaticResource Card}" Padding="14" Margin="0,0,0,8">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <VerticalStackLayout Spacing="3" VerticalOptions="Center">
+                                        <Label Text="{Binding IdVoucher}" Style="{StaticResource CardTitle}" />
+                                        <Label Text="{Binding PhanTram, StringFormat='Giảm {0:0.##}%'}" Style="{StaticResource Caption}" />
+                                        <Label Text="{Binding Promotion.NgayKt, StringFormat='Hạn dùng: {0:dd/MM/yyyy}'}" Style="{StaticResource Caption}" />
+                                    </VerticalStackLayout>
+                                    <Button Grid.Column="1" Text="Dùng mã"
+                                            Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectVoucherCommand}"
+                                            CommandParameter="{Binding .}"
+                                            IsEnabled="{Binding Source={x:Reference PageRoot}, Path=BindingContext.IsNotBusy}"
+                                            Style="{StaticResource SecondaryButton}" FontSize="12" Padding="10,0"
+                                            SemanticProperties.Description="{Binding SelectionLabel, StringFormat='Áp dụng {0}'}" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" Color="{StaticResource Primary}" />
+                <Label IsVisible="{Binding HasNoEligibleVouchers}" Text="Chưa có voucher phù hợp với đơn hàng này." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" />
+                <Label Text="{Binding VoucherMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Danger}" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
     </Grid>
 </ContentPage>

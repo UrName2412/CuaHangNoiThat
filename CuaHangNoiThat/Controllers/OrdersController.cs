@@ -14,6 +14,7 @@ public partial class OrdersController : ObservableObject
     private bool isBusy;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasError), nameof(IsEmpty))]
     private string errorMessage = string.Empty;
 
     public bool IsNotBusy => !IsBusy;
@@ -22,17 +23,27 @@ public partial class OrdersController : ObservableObject
 
     public OrdersController(SupabaseService supabase) => this.supabase = supabase;
 
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsNotBusy));
+        OnPropertyChanged(nameof(IsEmpty));
+    }
+
     public async Task LoadAsync()
     {
+        if (IsBusy)
+            return;
+
         try
         {
-            if (IsBusy)
-                return;
-
             IsBusy = true;
             ErrorMessage = string.Empty;
             Orders.Clear();
-            foreach (var order in await supabase.GetOrdersAsync())
+            var customerId = supabase.CurrentUser?.Id;
+            var orders = await supabase.GetOrdersAsync();
+            if (customerId != supabase.CurrentUser?.Id)
+                throw new InvalidOperationException("Tài khoản đã thay đổi. Vui lòng tải lại danh sách đơn hàng.");
+            foreach (var order in orders)
                 Orders.Add(order);
         }
         catch (InvalidOperationException exception)

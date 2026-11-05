@@ -8,6 +8,7 @@ public partial class AccountController : ObservableObject
 {
     private readonly SupabaseService supabase;
     private readonly CartController cart;
+    private bool returnToCheckoutAfterSignIn;
 
     [ObservableProperty] private string usernameOrEmail = string.Empty;
     [ObservableProperty] private string password = string.Empty;
@@ -51,10 +52,21 @@ public partial class AccountController : ObservableObject
         this.cart = cart;
     }
 
+    public void RequestCheckoutAfterSignIn() => returnToCheckoutAfterSignIn = true;
+
+    public void CancelCheckoutAfterSignIn() => returnToCheckoutAfterSignIn = false;
+
     public async Task InitializeAsync()
     {
-        if (User is not null || IsBusy)
+        if (IsBusy)
             return;
+
+        if (supabase.CurrentUser is { } currentUser)
+        {
+            // Profile edits update the service record; refresh the account card on return.
+            User = currentUser;
+            return;
+        }
 
         try
         {
@@ -76,7 +88,7 @@ public partial class AccountController : ObservableObject
     [RelayCommand]
     private async Task LoginAsync()
     {
-        if (!ValidateCredentials())
+        if (!ValidateCredentials(requireMinimumLength: false))
             return;
 
         await RunAsync(async () =>
@@ -84,6 +96,7 @@ public partial class AccountController : ObservableObject
             User = await supabase.LoginAsync(UsernameOrEmail.Trim(), Password);
             SetSuccessMessage("Đăng nhập thành công.");
             Password = string.Empty;
+            await ReturnToCheckoutIfRequestedAsync();
         });
     }
 
@@ -96,7 +109,7 @@ public partial class AccountController : ObservableObject
             return;
         }
 
-        if (!ValidateCredentials())
+        if (!ValidateCredentials(requireMinimumLength: true))
             return;
 
         await RunAsync(async () =>
@@ -106,7 +119,19 @@ public partial class AccountController : ObservableObject
             SetSuccessMessage(User is null
                 ? "Đăng ký thành công. Hãy kiểm tra email để xác nhận tài khoản."
                 : "Đăng ký và đăng nhập thành công.");
+            if (User is not null)
+                await ReturnToCheckoutIfRequestedAsync();
         });
+    }
+
+    private async Task ReturnToCheckoutIfRequestedAsync()
+    {
+        if (!returnToCheckoutAfterSignIn)
+            return;
+
+        returnToCheckoutAfterSignIn = false;
+        await Shell.Current.GoToAsync("//CartPage");
+        await Shell.Current.GoToAsync("CheckoutPage");
     }
 
     [RelayCommand]
@@ -119,6 +144,7 @@ public partial class AccountController : ObservableObject
     private async Task LogoutAsync()
     {
         await supabase.SignOutAsync();
+        CancelCheckoutAfterSignIn();
         cart.Clear();
         User = null;
         SetSuccessMessage("Bạn đã đăng xuất.");
@@ -155,7 +181,7 @@ public partial class AccountController : ObservableObject
 
     partial void OnMessageChanged(string value) => OnPropertyChanged(nameof(HasMessage));
 
-    private bool ValidateCredentials()
+    private bool ValidateCredentials(bool requireMinimumLength)
     {
         if (string.IsNullOrWhiteSpace(UsernameOrEmail) || string.IsNullOrWhiteSpace(Password))
         {
@@ -163,7 +189,7 @@ public partial class AccountController : ObservableObject
             return false;
         }
 
-        if (Password.Trim().Length < 6)
+        if (requireMinimumLength && Password.Length < 6)
         {
             SetErrorMessage("Mật khẩu phải có ít nhất 6 ký tự.");
             return false;

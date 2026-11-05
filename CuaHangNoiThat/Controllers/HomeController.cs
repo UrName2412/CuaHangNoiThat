@@ -10,7 +10,7 @@ public partial class HomeController : ObservableObject
 {
     private readonly SupabaseService supabase;
     private readonly CatalogController catalog;
-    public ObservableCollection<FurnitureItem> FeaturedItems { get; } = new();
+    public ObservableCollection<FurnitureItem> PreviewItems { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
 
     [ObservableProperty]
@@ -21,10 +21,11 @@ public partial class HomeController : ObservableObject
     [ObservableProperty] private string searchText = string.Empty;
 
     public bool IsNotBusy => !IsBusy;
-    public bool ShowEmptyState => !IsBusy && FeaturedItems.Count == 0 && string.IsNullOrWhiteSpace(ErrorMessage);
+    public bool ShowEmptyState => !IsBusy && PreviewItems.Count == 0 && string.IsNullOrWhiteSpace(ErrorMessage);
     public bool HasError => !IsBusy && !string.IsNullOrWhiteSpace(ErrorMessage);
     partial void OnIsBusyChanged(bool value)
     {
+        OnPropertyChanged(nameof(IsNotBusy));
         OnPropertyChanged(nameof(ShowEmptyState));
         OnPropertyChanged(nameof(HasError));
     }
@@ -37,18 +38,20 @@ public partial class HomeController : ObservableObject
 
     public async Task LoadAsync()
     {
+        if (IsBusy)
+            return;
+
         try
         {
-            if (IsBusy)
-                return;
             IsBusy = true;
             ErrorMessage = string.Empty;
             var products = await supabase.GetProductsAsync();
-            var featuredItems = products.Take(3).OrderBy(x => x.Price).ToList();
+            // This is a catalog preview; the backend does not provide a featured rank.
+            var previewItems = products.Take(4).ToList();
 
-            FeaturedItems.Clear();
-            foreach (var item in featuredItems)
-                FeaturedItems.Add(item);
+            PreviewItems.Clear();
+            foreach (var item in previewItems)
+                PreviewItems.Add(item);
 
             Categories.Clear();
             foreach (var category in products.Select(item => item.Category)
@@ -59,9 +62,9 @@ public partial class HomeController : ObservableObject
         }
         catch (Exception exception)
         {
-            FeaturedItems.Clear();
+            PreviewItems.Clear();
             Categories.Clear();
-            ErrorMessage = $"Không thể tải sản phẩm nổi bật: {exception.Message}";
+            ErrorMessage = $"Không thể tải sản phẩm: {exception.Message}";
         }
         finally
         {

@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:CuaHangNoiThat.Models"
              xmlns:controllers="clr-namespace:CuaHangNoiThat.Controllers"
+             xmlns:controls="clr-namespace:CuaHangNoiThat.Controls"
              x:Class="CuaHangNoiThat.Views.CatalogPage"
              x:DataType="controllers:CatalogController"
              x:Name="PageRoot"
@@ -49,7 +50,7 @@
             </HorizontalStackLayout>
         </ScrollView>
 
-        <Grid Grid.Row="2" Padding="20,4,20,8" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="10">
+        <Grid Grid.Row="2" Padding="20,4,20,8" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="10">
             <Label Text="Sản phẩm" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center" />
             <Button Grid.Column="1" Text="{Binding FilterButtonText}" Command="{Binding OpenFiltersCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" FontSize="12" />
             <Label Grid.Row="1"
@@ -58,6 +59,7 @@
                    VerticalTextAlignment="Center" />
             <Button Grid.Row="1" Grid.Column="1" IsVisible="{Binding HasAdvancedFilters}" Text="Xóa bộ lọc" Command="{Binding ClearFiltersCommand}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" FontSize="12" Padding="8,0" />
             <Label Grid.Row="2" Grid.ColumnSpan="2" IsVisible="{Binding HasAdvancedFilters}" Text="{Binding FilterSummary}" Style="{StaticResource Caption}" />
+            <Label Grid.Row="3" Grid.ColumnSpan="2" IsVisible="{Binding HasCartMessage}" Text="{Binding CartMessage}" Style="{StaticResource Caption}" TextColor="{StaticResource Primary}" />
         </Grid>
 
         <Grid Grid.Row="3" IsVisible="{Binding IsBusy}" ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="20,4,20,8">
@@ -78,19 +80,10 @@
                     <DataTemplate x:DataType="models:FurnitureItem">
                         <Border Style="{StaticResource Card}" Padding="10">
                             <VerticalStackLayout Spacing="7">
-                                <Border HeightRequest="148"
-                                        BackgroundColor="{StaticResource Secondary}"
+                                <Border BackgroundColor="{StaticResource Secondary}"
                                         StrokeThickness="0"
                                         StrokeShape="RoundRectangle 12">
-                                    <Grid>
-                                        <Label Text="▧"
-                                               FontSize="48"
-                                               TextColor="{StaticResource Primary}"
-                                               HorizontalTextAlignment="Center"
-                                               VerticalTextAlignment="Center"
-                                               AutomationProperties.IsInAccessibleTree="False" />
-                                        <Image Source="{Binding ImageName}" Aspect="AspectFill" SemanticProperties.Description="{Binding Name, StringFormat='Ảnh {0}'}" />
-                                    </Grid>
+                                    <controls:ProductImageView Url="{Binding ImageName}" AccessibleName="{Binding Name}" />
                                 </Border>
                                 <Label Text="{Binding Category}" Style="{StaticResource Eyebrow}" FontSize="12" CharacterSpacing="0.5" MaxLines="1" />
                                 <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" MaxLines="2" LineBreakMode="TailTruncation" MinimumHeightRequest="42" />
@@ -150,7 +143,10 @@
                     BackgroundColor="{StaticResource Surface}"
                     Stroke="{StaticResource BorderSubtle}"
                     StrokeShape="RoundRectangle 12">
-                <Label Text="{Binding ErrorMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Danger}" HorizontalTextAlignment="Center" />
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding ErrorMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Danger}" HorizontalTextAlignment="Center" />
+                    <Button Text="Thử lại" Command="{Binding RefreshCommand}" Style="{StaticResource SecondaryButton}" HorizontalOptions="Center" />
+                </VerticalStackLayout>
             </Border>
         </Grid>
     </Grid>

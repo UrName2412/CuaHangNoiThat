@@ -7,8 +7,10 @@ public partial class ProductImageView : ContentView
         propertyChanged: (view, _, _) => { if (((ProductImageView)view).IsLoaded) _ = ((ProductImageView)view).LoadPhotoAsync(); });
     public static readonly BindableProperty AccessibleNameProperty = BindableProperty.Create(nameof(AccessibleName), typeof(string), typeof(ProductImageView), string.Empty,
         propertyChanged: (view, _, value) => SemanticProperties.SetDescription(((ProductImageView)view).Photo, $"Ảnh {value}"));
+    public static readonly BindableProperty AutoSizeProperty = BindableProperty.Create(nameof(AutoSize), typeof(bool), typeof(ProductImageView), true);
     public string? Url { get => (string?)GetValue(UrlProperty); set => SetValue(UrlProperty, value); }
     public string AccessibleName { get => (string)GetValue(AccessibleNameProperty); set => SetValue(AccessibleNameProperty, value); }
+    public bool AutoSize { get => (bool)GetValue(AutoSizeProperty); set => SetValue(AutoSizeProperty, value); }
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(12) };
     private static readonly Dictionary<string, byte[]> Cache = new(StringComparer.Ordinal);
     private static readonly Queue<string> CacheOrder = new();
@@ -27,8 +29,13 @@ public partial class ProductImageView : ContentView
         {
             if (Width > 0)
             {
-                var height = Math.Clamp(Width * 0.9, 120, 280);
-                if (Math.Abs(HeightRequest - height) > 1) HeightRequest = height;
+                FallbackText.IsVisible = Width >= 120;
+                FallbackIcon.WidthRequest = FallbackIcon.HeightRequest = Math.Min(48, Width * 0.4);
+                if (AutoSize)
+                {
+                    var height = Math.Clamp(Width * 0.9, 120, 280);
+                    if (Math.Abs(HeightRequest - height) > 1) HeightRequest = height;
+                }
             }
         };
     }

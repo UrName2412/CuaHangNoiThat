@@ -19,4 +19,21 @@ public partial class CheckoutPage : ContentPage
         base.OnAppearing();
         await controller.LoadOrderAsync();
     }
+
+    protected override bool OnBackButtonPressed()
+    {
+        if (controller.IsAddressPickerOpen)
+        {
+            controller.CloseAddressPickerCommand.Execute(null);
+            return true;
+        }
+
+        if (controller.IsVoucherPickerOpen)
+        {
+            controller.CloseVoucherPickerCommand.Execute(null);
+            return true;
+        }
+
+        return base.OnBackButtonPressed();
+    }
 }
