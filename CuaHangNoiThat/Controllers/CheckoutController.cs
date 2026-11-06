@@ -504,7 +504,7 @@ public partial class CheckoutController : ObservableObject
             return;
         }
 
-        if (Phone.Any(character => !char.IsDigit(character)) || Phone.Trim().Length < 9)
+        if (!CustomerInputValidator.IsValidMobilePhone(Phone))
         {
             Message = "Số điện thoại không hợp lệ.";
             return;

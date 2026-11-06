@@ -132,6 +132,9 @@ public partial class CartController : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void ToggleAllSelection() => IsAllSelected = !IsAllSelected;
+
     public void RemovePurchasedQuantity(CartItemModel source, int purchasedQuantity)
     {
         // A user can add more items or start a new cart while an order is in flight.

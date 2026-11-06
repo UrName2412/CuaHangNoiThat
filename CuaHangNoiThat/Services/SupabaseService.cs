@@ -85,6 +85,8 @@ public sealed class SupabaseService
         if (string.IsNullOrWhiteSpace(normalizedEmail) || string.IsNullOrWhiteSpace(normalizedName) ||
             string.IsNullOrWhiteSpace(password))
             throw new InvalidOperationException("Thông tin đăng ký không được để trống.");
+        if (!CustomerInputValidator.IsValidFullName(normalizedName))
+            throw new InvalidOperationException("Họ và tên chỉ được chứa chữ cái và khoảng trắng.");
 
         var encodedEmail = Uri.EscapeDataString(normalizedEmail);
         var existingCustomers = await FetchListAsync<CustomerDto>(config,
@@ -539,6 +541,10 @@ public sealed class SupabaseService
         var normalizedPhone = phone.Trim();
         if (string.IsNullOrWhiteSpace(normalizedFullName) || string.IsNullOrWhiteSpace(normalizedEmail))
             throw new InvalidOperationException("Họ tên và email không được để trống.");
+        if (!CustomerInputValidator.IsValidFullName(normalizedFullName))
+            throw new InvalidOperationException("Họ và tên chỉ được chứa chữ cái và khoảng trắng.");
+        if (!CustomerInputValidator.IsValidMobilePhone(normalizedPhone))
+            throw new InvalidOperationException("Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng đầu số di động Việt Nam hợp lệ.");
 
         var customer = await FindCustomerByIdAsync(config, customerId, cancellationToken)
             ?? throw new InvalidOperationException("Không tìm thấy hồ sơ khách hàng hợp lệ.");

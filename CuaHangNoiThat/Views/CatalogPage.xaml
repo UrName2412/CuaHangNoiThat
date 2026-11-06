@@ -34,32 +34,46 @@
         </VerticalStackLayout>
 
         <ScrollView Grid.Row="1" Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-            <HorizontalStackLayout Padding="20,0,20,12" Spacing="8" BindableLayout.ItemsSource="{Binding Categories}">
+            <HorizontalStackLayout Padding="20,0,20,12" Spacing="8" BindableLayout.ItemsSource="{Binding CategoryChoices}">
                 <BindableLayout.ItemTemplate>
-                    <DataTemplate x:DataType="x:String">
-                        <Button Text="{Binding .}"
+                    <DataTemplate x:DataType="controllers:CatalogCategoryChoice">
+                        <Button Text="{Binding Label}"
                                 Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.SelectCategoryCommand}"
-                                CommandParameter="{Binding .}"
+                                CommandParameter="{Binding Label}"
                                 Style="{StaticResource SecondaryButton}"
                                 Padding="16,0"
                                 FontSize="13"
                                 HeightRequest="44"
-                                SemanticProperties.Hint="Lọc danh sách sản phẩm theo danh mục" />
+                                SemanticProperties.Hint="Lọc danh sách sản phẩm theo danh mục">
+                            <Button.Triggers>
+                                <DataTrigger TargetType="Button" Binding="{Binding IsSelected}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                            </Button.Triggers>
+                        </Button>
                     </DataTemplate>
                 </BindableLayout.ItemTemplate>
             </HorizontalStackLayout>
         </ScrollView>
 
-        <Grid Grid.Row="2" Padding="20,4,20,8" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="10">
+        <Grid Grid.Row="2" Padding="20,4,20,8" ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6" ColumnSpacing="10">
             <Label Text="Sản phẩm" Style="{StaticResource SectionTitle}" VerticalTextAlignment="Center" />
-            <Button Grid.Column="1" Text="{Binding FilterButtonText}" Command="{Binding OpenFiltersCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" FontSize="12" />
+            <Button Grid.Column="1" IsVisible="{Binding HasAnyFilters}" Text="Xóa bộ lọc" Command="{Binding ClearFiltersCommand}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" FontSize="12" Padding="8,0" />
+            <Button Grid.Column="2" Text="{Binding FilterButtonText}" Command="{Binding OpenFiltersCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" FontSize="12">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding HasAdvancedFilters}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        <Setter Property="TextColor" Value="{StaticResource White}" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
             <Label Grid.Row="1"
                    Text="{Binding Items.Count, StringFormat='{0} sản phẩm'}"
                    Style="{StaticResource Caption}"
                    VerticalTextAlignment="Center" />
-            <Button Grid.Row="1" Grid.Column="1" IsVisible="{Binding HasAdvancedFilters}" Text="Xóa bộ lọc" Command="{Binding ClearFiltersCommand}" BackgroundColor="Transparent" TextColor="{StaticResource Primary}" FontSize="12" Padding="8,0" />
-            <Label Grid.Row="2" Grid.ColumnSpan="2" IsVisible="{Binding HasAdvancedFilters}" Text="{Binding FilterSummary}" Style="{StaticResource Caption}" />
-            <Label Grid.Row="3" Grid.ColumnSpan="2" IsVisible="{Binding HasCartMessage}" Text="{Binding CartMessage}" Style="{StaticResource Caption}" TextColor="{StaticResource Primary}" />
+            <Label Grid.Row="2" Grid.ColumnSpan="3" IsVisible="{Binding HasAdvancedFilters}" Text="{Binding FilterSummary}" Style="{StaticResource Caption}" TextColor="{StaticResource Primary}" />
+            <Label Grid.Row="3" Grid.ColumnSpan="3" IsVisible="{Binding HasCartMessage}" Text="{Binding CartMessage}" Style="{StaticResource Caption}" TextColor="{StaticResource Primary}" />
         </Grid>
 
         <Grid Grid.Row="3" IsVisible="{Binding IsBusy}" ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="20,4,20,8">

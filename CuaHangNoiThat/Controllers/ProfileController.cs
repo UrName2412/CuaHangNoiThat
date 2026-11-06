@@ -16,6 +16,7 @@ public partial class ProfileController : ObservableObject
     [ObservableProperty] private string newPassword = string.Empty;
     [ObservableProperty] private string confirmPassword = string.Empty;
     [ObservableProperty] private string message = string.Empty;
+    [ObservableProperty] private string passwordMessage = string.Empty;
     [ObservableProperty] private bool isBusy;
 
     public bool IsNotBusy => !IsBusy;
@@ -26,6 +27,7 @@ public partial class ProfileController : ObservableObject
     {
         ClearPasswords();
         Message = string.Empty;
+        PasswordMessage = string.Empty;
         var user = supabase.CurrentUser;
         FullName = user?.FullName ?? string.Empty;
         Email = user?.Email ?? string.Empty;
@@ -41,6 +43,17 @@ public partial class ProfileController : ObservableObject
         if (string.IsNullOrWhiteSpace(FullName) || string.IsNullOrWhiteSpace(Email))
         {
             Message = "Vui lòng nhập họ tên và email.";
+            return;
+        }
+
+        if (!CustomerInputValidator.IsValidFullName(FullName))
+        {
+            Message = "Họ và tên chỉ được chứa chữ cái và khoảng trắng.";
+            return;
+        }
+        if (!CustomerInputValidator.IsValidMobilePhone(Phone))
+        {
+            Message = "Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng đầu số di động Việt Nam hợp lệ.";
             return;
         }
 
@@ -64,18 +77,18 @@ public partial class ProfileController : ObservableObject
         if (IsBusy) return;
         if (NewPassword != ConfirmPassword)
         {
-            Message = "Mật khẩu mới và xác nhận chưa khớp.";
+            PasswordMessage = "Mật khẩu mới và xác nhận chưa khớp.";
             return;
         }
         try
         {
             IsBusy = true;
-            Message = string.Empty;
+            PasswordMessage = string.Empty;
             await supabase.ChangePasswordAsync(CurrentPassword, NewPassword);
             CurrentPassword = NewPassword = ConfirmPassword = string.Empty;
-            Message = "Đã đổi mật khẩu.";
+            PasswordMessage = "Đã đổi mật khẩu.";
         }
-        catch (Exception exception) { Message = exception.Message; }
+        catch (Exception exception) { PasswordMessage = exception.Message; }
         finally { IsBusy = false; OnPropertyChanged(nameof(IsNotBusy)); }
     }
 

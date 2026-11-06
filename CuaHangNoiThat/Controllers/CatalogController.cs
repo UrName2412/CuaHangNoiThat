@@ -9,6 +9,7 @@ using CuaHangNoiThat.Services;
 namespace CuaHangNoiThat.Controllers;
 
 public sealed record FilterChoice(string Label, bool IsSelected, ProductFilterOption? Option = null, string? SortOrder = null);
+public sealed record CatalogCategoryChoice(string Label, bool IsSelected);
 
 public partial class CatalogController : ObservableObject
 {
@@ -53,6 +54,7 @@ public partial class CatalogController : ObservableObject
         + (minimumPrice.HasValue || maximumPrice.HasValue ? 1 : 0) + (inStockOnly ? 1 : 0)
         + (discountedOnly ? 1 : 0) + (sortOrder != "Mặc định" ? 1 : 0);
     public bool HasAdvancedFilters => ActiveFilterCount > 0;
+    public bool HasAnyFilters => HasAdvancedFilters || SelectedCategory != "Tất cả";
     public string FilterButtonText => HasAdvancedFilters ? $"Bộ lọc ({ActiveFilterCount})" : "Bộ lọc";
     public string FilterSummary => string.Join(" · ", new[]
     {
@@ -64,8 +66,9 @@ public partial class CatalogController : ObservableObject
         sortOrder != "Mặc định" ? sortOrder : null
     }.Where(x => x is not null));
 
-    public ObservableCollection<FurnitureItem> Items { get; } = new();
+    public RangeObservableCollection<FurnitureItem> Items { get; } = new();
     public ObservableCollection<string> Categories { get; } = ["Tất cả"];
+    public ObservableCollection<CatalogCategoryChoice> CategoryChoices { get; } = new();
 
     [ObservableProperty]
     private string selectedCategory = "Tất cả";
@@ -117,6 +120,7 @@ public partial class CatalogController : ObservableObject
             Categories.Add("Tất cả");
             foreach (var category in allItems.Select(item => item.Category).Distinct(StringComparer.OrdinalIgnoreCase))
                 Categories.Add(category);
+            RefreshCategoryChoices();
             LoadAttributeOptions();
             FilterItems();
         }
@@ -147,20 +151,33 @@ public partial class CatalogController : ObservableObject
     {
         // Old inventory must not remain actionable after a failed refresh.
         allItems.Clear();
-        Items.Clear();
+        Items.ReplaceRange([]);
         Categories.Clear();
         Categories.Add("Tất cả");
+        RefreshCategoryChoices();
         OnPropertyChanged(nameof(ShowEmptyState));
     }
 
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync();
 
-    partial void OnSelectedCategoryChanged(string value) => FilterItems();
+    partial void OnSelectedCategoryChanged(string value)
+    {
+        RefreshCategoryChoices();
+        OnPropertyChanged(nameof(HasAnyFilters));
+        FilterItems();
+    }
     partial void OnSearchTextChanged(string value) => FilterItems();
 
     [RelayCommand]
     private void SelectCategory(string category) => SelectedCategory = category;
+
+    private void RefreshCategoryChoices()
+    {
+        CategoryChoices.Clear();
+        foreach (var category in Categories)
+            CategoryChoices.Add(new CatalogCategoryChoice(category, category == SelectedCategory));
+    }
 
     private void LoadAttributeOptions()
     {
@@ -315,6 +332,7 @@ public partial class CatalogController : ObservableObject
     [RelayCommand]
     private void ClearFilters()
     {
+        SelectedCategory = "Tất cả";
         productTypeFilter = AllProductTypes;
         woodTypeFilter = AllWoodTypes;
         minimumPrice = maximumPrice = null;
@@ -328,6 +346,7 @@ public partial class CatalogController : ObservableObject
     private void NotifyFilters()
     {
         OnPropertyChanged(nameof(HasAdvancedFilters));
+        OnPropertyChanged(nameof(HasAnyFilters));
         OnPropertyChanged(nameof(FilterButtonText));
         OnPropertyChanged(nameof(FilterSummary));
         OnPropertyChanged(nameof(ActiveFilterCount));
@@ -335,7 +354,6 @@ public partial class CatalogController : ObservableObject
 
     private void FilterItems()
     {
-        Items.Clear();
         var query = SearchText.Trim();
         var filtered = allItems.Where(item =>
                      (SelectedCategory == "Tất cả" || item.Category == SelectedCategory) &&
@@ -356,8 +374,7 @@ public partial class CatalogController : ObservableObject
             "Tên A–Z" => filtered.OrderBy(x => x.Name, StringComparer.Create(CultureInfo.GetCultureInfo("vi-VN"), true)).ThenBy(x => x.IdSanPham),
             _ => filtered
         };
-        foreach (var item in filtered)
-            Items.Add(item);
+        Items.ReplaceRange(filtered);
         OnPropertyChanged(nameof(ShowEmptyState));
     }
 

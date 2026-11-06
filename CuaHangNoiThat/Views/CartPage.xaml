@@ -74,7 +74,7 @@
     <Border Grid.Row="1" BackgroundColor="{StaticResource Surface}" Stroke="{StaticResource BorderSubtle}" Padding="12">
         <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="8">
             <HorizontalStackLayout Spacing="0">
-                <controls:AppCheckBox IsChecked="{Binding IsAllSelected}" AccessibleName="Chọn tất cả sản phẩm" />
+                <controls:AppCheckBox IsChecked="{Binding IsAllSelected, Mode=OneWay}" ToggleCommand="{Binding ToggleAllSelectionCommand}" AccessibleName="Chọn tất cả sản phẩm" />
                 <Label Text="Tất cả" VerticalOptions="Center" FontSize="12" />
             </HorizontalStackLayout>
             <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" HorizontalOptions="End">

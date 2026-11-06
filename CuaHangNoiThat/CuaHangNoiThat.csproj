@@ -54,7 +54,8 @@
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
-		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
+		<MauiImage Remove="Resources\Images\icon_home.png;Resources\Images\icon_cart.png;Resources\Images\icon_orders.png;Resources\Images\icon_catalog.png" />
+		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="False" />
 		
 		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />

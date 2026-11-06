@@ -19,6 +19,16 @@
 
         private async void OnNavigated(object? sender, ShellNavigatedEventArgs args)
         {
+            // Modal filter navigation does not change Shell routes.
+            var previousPage = args.Previous?.Location.OriginalString.Split('?', 2)[0]
+                .Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+            var currentPage = args.Current?.Location.OriginalString.Split('?', 2)[0]
+                .Split('/', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+            if (string.Equals(previousPage, "CatalogPage", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(currentPage, "CatalogPage", StringComparison.OrdinalIgnoreCase))
+                (App.Services.GetService(typeof(Controllers.CatalogController)) as Controllers.CatalogController)?
+                    .ClearFiltersCommand.Execute(null);
+
             if (isResettingTabStack ||
                 args.Source != ShellNavigationSource.ShellSectionChanged ||
                 CurrentItem?.CurrentItem?.Stack.Count <= 1)

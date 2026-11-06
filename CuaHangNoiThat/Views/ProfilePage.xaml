@@ -26,7 +26,7 @@
                     </VerticalStackLayout>
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Số điện thoại" Style="{StaticResource Caption}" />
-                        <Border Style="{StaticResource FieldSurface}"><Entry Text="{Binding Phone}" Placeholder="Số điện thoại" Keyboard="Telephone" ReturnType="Done" /></Border>
+                        <Border Style="{StaticResource FieldSurface}"><Entry Text="{Binding Phone}" Placeholder="Số điện thoại" Keyboard="Telephone" MaxLength="10" ReturnType="Done" /></Border>
                     </VerticalStackLayout>
                     <Label Text="Đổi email sẽ cập nhật tên đăng nhập của tài khoản." Style="{StaticResource Caption}" />
                     <Button Text="Lưu thay đổi" Command="{Binding SaveCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource PrimaryButton}" HeightRequest="50" />
@@ -41,10 +41,11 @@
                         <Label Text="Đổi mật khẩu" Style="{StaticResource SectionTitle}" />
                         <Label Text="Nhập mật khẩu hiện tại để xác nhận thay đổi." Style="{StaticResource Caption}" />
                     </VerticalStackLayout>
-                    <Border Style="{StaticResource FieldSurface}"><Entry Text="{Binding CurrentPassword}" Placeholder="Mật khẩu hiện tại" IsPassword="True" ReturnType="Next" /></Border>
-                    <Border Style="{StaticResource FieldSurface}"><Entry Text="{Binding NewPassword}" Placeholder="Mật khẩu mới" IsPassword="True" ReturnType="Next" /></Border>
-                    <Border Style="{StaticResource FieldSurface}"><Entry Text="{Binding ConfirmPassword}" Placeholder="Nhập lại mật khẩu mới" IsPassword="True" ReturnType="Done" /></Border>
+                    <VerticalStackLayout Spacing="4"><Label Text="Mật khẩu hiện tại" Style="{StaticResource Caption}" /><Border Style="{StaticResource FieldSurface}"><Entry Text="{Binding CurrentPassword}" Placeholder="Mật khẩu hiện tại" IsPassword="True" ReturnType="Next" /></Border></VerticalStackLayout>
+                    <VerticalStackLayout Spacing="4"><Label Text="Mật khẩu mới" Style="{StaticResource Caption}" /><Border Style="{StaticResource FieldSurface}"><Entry Text="{Binding NewPassword}" Placeholder="Mật khẩu mới" IsPassword="True" ReturnType="Next" /></Border></VerticalStackLayout>
+                    <VerticalStackLayout Spacing="4"><Label Text="Xác nhận mật khẩu mới" Style="{StaticResource Caption}" /><Border Style="{StaticResource FieldSurface}"><Entry Text="{Binding ConfirmPassword}" Placeholder="Nhập lại mật khẩu mới" IsPassword="True" ReturnType="Done" /></Border></VerticalStackLayout>
                     <Button Text="Cập nhật mật khẩu" Command="{Binding ChangePasswordCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource SecondaryButton}" HeightRequest="48" />
+                    <Label Text="{Binding PasswordMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Primary}" HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
             </Border>
         </VerticalStackLayout>

@@ -109,6 +109,12 @@ public partial class AccountController : ObservableObject
             return;
         }
 
+        if (!CustomerInputValidator.IsValidFullName(FullName))
+        {
+            SetErrorMessage("Họ và tên chỉ được chứa chữ cái và khoảng trắng.");
+            return;
+        }
+
         if (!ValidateCredentials(requireMinimumLength: true))
             return;
 
