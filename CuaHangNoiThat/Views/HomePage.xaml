@@ -87,26 +87,26 @@
 
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="models:FurnitureItem">
-                <Border BackgroundColor="{StaticResource Surface}" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 20" Padding="0">
+                <Border BackgroundColor="{StaticResource Surface}" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 20" Padding="0" VerticalOptions="Fill">
                     <Border.Shadow><Shadow Brush="{StaticResource Tertiary}" Opacity="0.06" Radius="8" Offset="0,3" /></Border.Shadow>
-                    <VerticalStackLayout Spacing="0">
+                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="0" VerticalOptions="Fill">
                         <Border Margin="8" StrokeThickness="0" StrokeShape="RoundRectangle 14">
                             <controls:ProductImageView Url="{Binding ImageName}" AccessibleName="{Binding Name}" />
                             <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.OpenDetailsCommand}" CommandParameter="{Binding .}" /></Border.GestureRecognizers>
                         </Border>
-                        <VerticalStackLayout Padding="12,2,12,12" Spacing="6">
-                            <Label Text="{Binding Category}" Style="{StaticResource Caption}" MaxLines="1" />
-                            <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" MinimumHeightRequest="46" MaxLines="2" LineBreakMode="TailTruncation" />
-                            <Label Text="{Binding PriceFormatted}" FontFamily="OpenSansSemibold" FontSize="16" TextColor="{StaticResource Primary}" />
-                            <FlexLayout IsVisible="{Binding HasDiscount}" Direction="Row" Wrap="Wrap" AlignItems="Center">
+                        <Grid Grid.Row="1" Padding="12,2,12,0" RowDefinitions="18,46,24,20,18" RowSpacing="4" VerticalOptions="Start">
+                            <Label Text="{Binding Category}" Style="{StaticResource Caption}" MaxLines="1" LineBreakMode="TailTruncation" VerticalTextAlignment="Center" />
+                            <Label Grid.Row="1" Text="{Binding Name}" Style="{StaticResource CardTitle}" MaxLines="2" LineBreakMode="TailTruncation" VerticalTextAlignment="Start" />
+                            <Label Grid.Row="2" Text="{Binding PriceFormatted}" FontFamily="OpenSansSemibold" FontSize="16" TextColor="{StaticResource Primary}" MaxLines="1" LineBreakMode="TailTruncation" VerticalTextAlignment="Center" />
+                            <FlexLayout Grid.Row="3" IsVisible="{Binding HasDiscount}" Direction="Row" Wrap="NoWrap" AlignItems="Center">
                                 <Label Text="{Binding OriginalPriceFormatted}" FontSize="11" TextColor="{StaticResource TextSecondary}" TextDecorations="Strikethrough" Margin="0,0,8,0" />
                                 <Label Text="{Binding DiscountFormatted}" FontSize="11" TextColor="{StaticResource Primary}" FontFamily="OpenSansSemibold" />
                             </FlexLayout>
-                            <Label Text="{Binding StockAvailable, StringFormat='Còn {0} sản phẩm'}" Style="{StaticResource Caption}" />
-                            <Button Text="Chi tiết ↗" Style="{StaticResource SecondaryButton}" BackgroundColor="{StaticResource SurfaceMuted}" FontSize="12" Padding="4,0" Margin="0,3,0,0"
-                                    Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.OpenDetailsCommand}" CommandParameter="{Binding .}" SemanticProperties.Description="{Binding Name, StringFormat='Xem chi tiết {0}'}" />
-                        </VerticalStackLayout>
-                    </VerticalStackLayout>
+                            <Label Grid.Row="4" Text="{Binding StockAvailable, StringFormat='Còn {0} sản phẩm'}" Style="{StaticResource Caption}" MaxLines="1" VerticalTextAlignment="Center" />
+                        </Grid>
+                        <Button Grid.Row="2" Text="Chi tiết ↗" Style="{StaticResource SecondaryButton}" BackgroundColor="{StaticResource SurfaceMuted}" FontSize="12" Padding="4,0" Margin="12,4,12,12"
+                                Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.OpenDetailsCommand}" CommandParameter="{Binding .}" SemanticProperties.Description="{Binding Name, StringFormat='Xem chi tiết {0}'}" />
+                    </Grid>
                 </Border>
             </DataTemplate>
         </CollectionView.ItemTemplate>

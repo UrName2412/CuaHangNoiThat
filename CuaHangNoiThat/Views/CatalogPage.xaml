@@ -92,29 +92,30 @@
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:FurnitureItem">
-                        <Border Style="{StaticResource Card}" Padding="10">
-                            <VerticalStackLayout Spacing="7">
+                        <Border Style="{StaticResource Card}" Padding="10" VerticalOptions="Fill">
+                            <Grid RowDefinitions="Auto,18,42,34,24,18,*,44" RowSpacing="7" VerticalOptions="Fill">
                                 <Border BackgroundColor="{StaticResource Secondary}"
                                         StrokeThickness="0"
                                         StrokeShape="RoundRectangle 12">
                                     <controls:ProductImageView Url="{Binding ImageName}" AccessibleName="{Binding Name}" />
                                 </Border>
-                                <Label Text="{Binding Category}" Style="{StaticResource Eyebrow}" FontSize="12" CharacterSpacing="0.5" MaxLines="1" />
-                                <Label Text="{Binding Name}" Style="{StaticResource CardTitle}" MaxLines="2" LineBreakMode="TailTruncation" MinimumHeightRequest="42" />
-                                <Label Text="{Binding Description}"
+                                <Label Grid.Row="1" Text="{Binding Category}" Style="{StaticResource Eyebrow}" FontSize="12" CharacterSpacing="0.5" MaxLines="1" LineBreakMode="TailTruncation" VerticalTextAlignment="Center" />
+                                <Label Grid.Row="2" Text="{Binding Name}" Style="{StaticResource CardTitle}" MaxLines="2" LineBreakMode="TailTruncation" />
+                                <Label Grid.Row="3" Text="{Binding Description}"
                                        Style="{StaticResource Caption}"
                                        MaxLines="2"
-                                       LineBreakMode="TailTruncation"
-                                       MinimumHeightRequest="34" />
-                                <Label Text="{Binding PriceFormatted}"
+                                       LineBreakMode="TailTruncation" />
+                                <Label Grid.Row="4" Text="{Binding PriceFormatted}"
                                        FontFamily="OpenSansSemibold"
                                        FontSize="16"
                                        TextColor="{StaticResource Primary}"
+                                       MaxLines="1"
+                                       LineBreakMode="TailTruncation"
                                        VerticalTextAlignment="Center" />
-                                <Label Text="{Binding StockAvailable, StringFormat='Còn {0} sản phẩm'}"
+                                <Label Grid.Row="5" Text="{Binding StockAvailable, StringFormat='Còn {0} sản phẩm'}"
                                        Style="{StaticResource Caption}"
-                                       MaxLines="1" />
-                                <Grid ColumnDefinitions="*,44" ColumnSpacing="8" Margin="0,2,0,0">
+                                       MaxLines="1" VerticalTextAlignment="Center" />
+                                <Grid Grid.Row="7" ColumnDefinitions="*,44" ColumnSpacing="8">
                                     <Button Text="Chi tiết"
                                             Command="{Binding Source={x:Reference PageRoot}, Path=BindingContext.OpenDetailsCommand}"
                                             CommandParameter="{Binding .}"
@@ -139,7 +140,7 @@
                                             FontSize="20"
                                             SemanticProperties.Description="{Binding Name, StringFormat='Thêm {0} vào giỏ hàng'}" />
                                 </Grid>
-                            </VerticalStackLayout>
+                            </Grid>
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
