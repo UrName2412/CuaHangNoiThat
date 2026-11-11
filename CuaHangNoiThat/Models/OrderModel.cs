@@ -16,6 +16,15 @@ public sealed class OrderItemModel
 
 public partial class OrderModel : ObservableObject
 {
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailsButtonText))]
+    private bool isExpanded;
+
+    public string DetailsButtonText => IsExpanded ? "Thu gọn sản phẩm ▴" : $"Xem sản phẩm ({Items.Count}) ▾";
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ToggleDetails() => IsExpanded = !IsExpanded;
+
     public string Code { get; init; } = string.Empty;
     public string OrderId { get; init; } = string.Empty;
     public decimal TotalAmount { get; init; }

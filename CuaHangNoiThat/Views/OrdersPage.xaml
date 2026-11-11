@@ -8,7 +8,7 @@
              Title="Đơn hàng"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource PageBackground}">
-    <Grid RowDefinitions="Auto,*" Padding="20,16,20,20">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="20,16,20,20">
         <Grid ColumnDefinitions="44,*,44" ColumnSpacing="10">
             <Button Text="‹" Clicked="OnBackClicked" BackgroundColor="{StaticResource Surface}" TextColor="{StaticResource TextPrimary}" BorderColor="{StaticResource BorderSubtle}" BorderWidth="1" CornerRadius="14" FontSize="26" Padding="0" WidthRequest="44" HeightRequest="44" SemanticProperties.Description="Quay lại" />
             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
@@ -18,7 +18,26 @@
             <Button Grid.Column="2" Text="↻" Command="{Binding RefreshCommand}" IsEnabled="{Binding IsNotBusy}" BackgroundColor="{StaticResource Surface}" TextColor="{StaticResource Primary}" BorderColor="{StaticResource BorderSubtle}" BorderWidth="1" CornerRadius="14" FontSize="21" Padding="0" WidthRequest="44" HeightRequest="44" SemanticProperties.Description="Làm mới danh sách đơn hàng" />
         </Grid>
 
-        <Grid Grid.Row="1">
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="12" Margin="0,12,0,0">
+            <VerticalStackLayout Spacing="6">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsEnabled="{Binding IsNotBusy}">
+                    <VerticalStackLayout>
+                        <Label Text="Xem đơn hàng" Style="{StaticResource Caption}" />
+                        <Button Text="{Binding SelectedFilterModeText}" Clicked="OnFilterModeClicked" Style="{StaticResource SecondaryButton}" HorizontalOptions="Fill" FontSize="14" Padding="12,0" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Chọn ngày / tháng / năm" Style="{StaticResource Caption}" />
+                        <Button Text="{Binding SelectedDateText}" Clicked="OnDateClicked" Style="{StaticResource SecondaryButton}" HorizontalOptions="Fill" FontSize="14" Padding="12,0" />
+                    </VerticalStackLayout>
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Label Text="{Binding PeriodSummary}" Style="{StaticResource BodyText}" VerticalOptions="Center" />
+                    <Button Grid.Column="1" Text="Áp dụng" Command="{Binding ApplyFilterCommand}" IsEnabled="{Binding IsNotBusy}" Style="{StaticResource PrimaryButton}" Padding="16,0" />
+                </Grid>
+            </VerticalStackLayout>
+        </Border>
+
+        <Grid Grid.Row="2">
             <CollectionView ItemsSource="{Binding Orders}" IsVisible="{Binding IsNotBusy}" SelectionMode="None" Margin="0,16,0,0">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:OrderModel">
@@ -35,7 +54,9 @@
                                     <Label Grid.Column="1" Text="{Binding TotalAmountFormatted}" FontFamily="OpenSansSemibold" FontSize="15" TextColor="{StaticResource Primary}" HorizontalTextAlignment="End" VerticalOptions="Center" />
                                 </Grid>
 
-                                <Border BackgroundColor="{StaticResource SurfaceMuted}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="12">
+                                <Button Text="{Binding DetailsButtonText}" Command="{Binding ToggleDetailsCommand}" BackgroundColor="{StaticResource SurfaceMuted}" TextColor="{StaticResource Primary}" HorizontalOptions="Start" />
+
+                                <Border IsVisible="{Binding IsExpanded}" BackgroundColor="{StaticResource SurfaceMuted}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="12">
                                     <VerticalStackLayout Spacing="10">
                                         <Label Text="Sản phẩm trong đơn" Style="{StaticResource Eyebrow}" CharacterSpacing="0.5" />
                                         <VerticalStackLayout BindableLayout.ItemsSource="{Binding Items}" Spacing="10">
@@ -53,10 +74,6 @@
                                     </VerticalStackLayout>
                                 </Border>
 
-                                <Grid ColumnDefinitions="*,Auto" Padding="0,2,0,0">
-                                    <Label Text="Tổng cộng" Style="{StaticResource BodyText}" FontFamily="OpenSansSemibold" />
-                                    <Label Grid.Column="1" Text="{Binding TotalAmountFormatted}" FontFamily="OpenSansSemibold" FontSize="16" TextColor="{StaticResource Primary}" />
-                                </Grid>
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
@@ -70,13 +87,30 @@
 
             <Border IsVisible="{Binding IsEmpty}" Style="{StaticResource Card}" Padding="22" HorizontalOptions="Center" VerticalOptions="Center" Margin="8">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Chưa có đơn hàng" Style="{StaticResource SectionTitle}" HorizontalTextAlignment="Center" />
-                    <Label Text="Đơn hàng của bạn sẽ hiển thị tại đây." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
+                    <Label Text="Không có đơn hàng" Style="{StaticResource SectionTitle}" HorizontalTextAlignment="Center" />
+                    <Label Text="Không có đơn trong khoảng thời gian hoặc trang này. Hãy chọn thời gian khác hoặc quay lại trang trước." Style="{StaticResource BodyText}" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
             </Border>
 
             <Border IsVisible="{Binding HasError}" Style="{StaticResource Card}" Padding="14" HorizontalOptions="Center" VerticalOptions="End" Margin="0,0,0,12">
                 <Label Text="{Binding ErrorMessage}" Style="{StaticResource BodyText}" TextColor="{StaticResource Danger}" HorizontalTextAlignment="Center" />
+            </Border>
+        </Grid>
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Padding="0,10,0,0">
+            <Button Text="‹ Trước" Command="{Binding PreviousPageCommand}" IsEnabled="{Binding CanGoPrevious}" />
+            <Label Grid.Column="1" Text="{Binding PageSummary}" Style="{StaticResource Caption}" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+            <Button Grid.Column="2" Text="Sau ›" Command="{Binding NextPageCommand}" IsEnabled="{Binding CanGoNext}" />
+        </Grid>
+        <Grid x:Name="FilterOverlay" Grid.RowSpan="4" IsVisible="False" BackgroundColor="#80000000">
+            <Button BackgroundColor="Transparent" Clicked="OnCloseFilterClicked" />
+            <Border Style="{StaticResource Card}" Padding="18" Margin="20" MaximumWidthRequest="420" HorizontalOptions="Fill" VerticalOptions="Center">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label x:Name="FilterOverlayTitle" Style="{StaticResource SectionTitle}" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="Đóng" Clicked="OnCloseFilterClicked" Style="{StaticResource SecondaryButton}" FontSize="12" Padding="12,0" />
+                    </Grid>
+                    <VerticalStackLayout x:Name="FilterOptions" Spacing="10" />
+                </VerticalStackLayout>
             </Border>
         </Grid>
     </Grid>

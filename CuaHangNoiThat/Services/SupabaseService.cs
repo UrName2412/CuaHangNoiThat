@@ -749,15 +749,17 @@ public sealed class SupabaseService
         return Math.Min(orderTotal, orderTotal * voucher.PhanTram.Value / 100m);
     }
 
-    public async Task<IReadOnlyList<OrderModel>> GetOrdersAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<OrderModel>> GetOrdersAsync(DateTime fromDate, DateTime toDateExclusive, int page, int pageSize, CancellationToken cancellationToken = default)
     {
+        if (fromDate >= toDateExclusive || page < 1 || pageSize < 1 || pageSize > 100)
+            throw new ArgumentOutOfRangeException(nameof(page), "Khoảng thời gian hoặc trang không hợp lệ.");
         var config = await configuration;
         if (currentUser is null)
             throw new InvalidOperationException("Vui lòng đăng nhập để xem đơn hàng.");
 
         var orders = await FetchListAsync<OrderDto>(
             config,
-            $"/rest/v1/hoadon?select=id_hoadon,ngaydat,ngaygiao,tongtien,trangthai&id_khachhang=eq.{Uri.EscapeDataString(currentUser.Id)}&order=ngaydat.desc",
+            $"/rest/v1/hoadon?select=id_hoadon,ngaydat,ngaygiao,tongtien,trangthai&id_khachhang=eq.{Uri.EscapeDataString(currentUser.Id)}&ngaydat=gte.{fromDate:yyyy-MM-dd}&ngaydat=lt.{toDateExclusive:yyyy-MM-dd}&order=ngaydat.desc,id_hoadon.desc&limit={pageSize + 1}&offset={(page - 1) * pageSize}",
             cancellationToken);
 
         // Fetch details in bounded batches instead of one HTTP request per order.
